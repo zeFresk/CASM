@@ -4,4 +4,9 @@
 
 #include "regex.h"
 
-std::regex separate_line{ separate_line_str, flags };
+namespace _impl {
+
+	std::regex separate_line{ separate_line_str, flags };
+
+	std::regex parameters_regex{ parameters_str, flags };
+}
