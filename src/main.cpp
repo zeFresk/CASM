@@ -5,6 +5,7 @@
 */
 
 #include "opt.h"
+#include "tools.h"
 
 #include <iostream>
 #include <fstream>
@@ -19,6 +20,8 @@ int main(int argc, char* argv[])
 		{
 			for (std::size_t i = 0; i < opts.in.size(); ++i)
 			{
+				// Opening output file for writing
+				// We have to be carefull because of nofile option
 				std::ostream* out;
 				std::ofstream out_file;
 				if (opts.no_file)
@@ -37,6 +40,11 @@ int main(int argc, char* argv[])
 					out = &out_file;
 				}
 				else { throw std::runtime_error{ "How ?" }; }
+
+				//Extracting assembler from input file
+				auto input_data = load_from_file(opts.in[i]);
+				v_log(opts.verbose, "Assembling ", opts.in[i], "\n");
+				auto out = assemble(input_data, opts.verbose);
 			}
 		}
 	}
