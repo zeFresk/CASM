@@ -1,0 +1,109 @@
+#include "opt.h"
+#include "CMake_config.h"
+
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <string>
+
+#include <boost/program_options.hpp>
+
+namespace po = boost::program_options;
+
+// Make sure args are valids
+// else throw an exception
+void check_args(options const& opt)
+{
+	if (opt.in.empty() && opt.assemble)
+	{
+		throw po::error("Error: No input file provided");
+	}
+}
+
+void version()
+{
+	std::cout << "CASM (" << BITS << ") v" << MAJOR_VERSION << "." << MINOR_VERSION << "\n"
+		<< "Compiled with " << COMPILER_ID << " v" << COMPILER_VERSION << "\n"
+		<< "CXX_FLAGS=" << CXX_FLAGS << std::endl;
+}
+
+options parse_args(int argc, char* argv[])
+{
+	options ret; //to fill and return
+	ret.assemble = true;
+	std::string config_file;
+
+	// Declare a group of options that will be 
+	// allowed only on command line
+	po::options_description generic("Generic options");
+	generic.add_options()
+		("version,v", "print this program version along with usefull informations")
+		("help", "produce help message")
+		("config,c", po::value<std::string>(&config_file)->default_value("config.cfg"),"name of configuration's file")
+		;
+
+	// Declare a group of options that will be 
+	// allowed both on command line and in
+	// config file
+	po::options_description config("Configuration");
+	config.add_options()
+		("verbose,V", "print more information during assembly process")
+		("file,f", po::value<std::vector<std::string>>(&ret.out)->composing(), "output file(s), default is ${input_filename}.cbin")
+		("nofile", "print output binary instead of saving it")
+		;
+
+	// Hidden options, will be allowed both on command line and
+	// in config file, but will not be shown to the user.
+	po::options_description hidden("Hidden options");
+	hidden.add_options()
+		("input-file", po::value<std::vector<std::string>>(&ret.in), "input file(s)")
+		;
+
+
+	po::options_description cmdline_options;
+	cmdline_options.add(generic).add(config).add(hidden);
+
+	po::options_description config_file_options;
+	config_file_options.add(config).add(hidden);
+
+	po::options_description visible("Allowed options");
+	visible.add(generic).add(config);
+
+	//set first parameter to be input file
+	po::positional_options_description p;
+	p.add("input-file", -1);
+
+	//parsing args
+	po::variables_map vm;
+	store(po::command_line_parser(argc, argv).
+		options(cmdline_options).positional(p).run(), vm);
+	notify(vm);
+
+	std::ifstream ifs(config_file);
+	if (!ifs)
+	{
+		throw std::runtime_error("Error: unable to open config file");
+	}
+	else
+	{
+		//parsing config file
+		store(parse_config_file(ifs, config_file_options), vm);
+		notify(vm);
+	}
+
+	if (vm.count("help")) {
+		ret.assemble = false; //no assembly to do
+		std::cout << visible << std::endl;
+	}
+
+	if (vm.count("version")) {
+		ret.assemble = false; //no assembly to do
+		version();
+	}
+
+	ret.no_file = vm.count("nofile");
+
+	ret.verbose = vm.count("verbose");
+
+	return ret;
+}
