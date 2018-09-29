@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
 				//Extracting assembler from input file
 				auto input_data = load_from_file(opts.in[i]);
 				v_log(opts.verbose, "Assembling ", opts.in[i], "\n");
-				auto out = assemble(input_data, opts.verbose);
+				auto out_data = assemble(input_data, opts.verbose);
 			}
 		}
 	}

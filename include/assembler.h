@@ -2,6 +2,8 @@
 	Core of assembler
 	Functions used to transform CASM to semi-binary
 */
+#ifndef assembler_h
+#define assembler_h
 
 #include <cstdint>
 #include <vector>
@@ -26,11 +28,11 @@ struct semi_assembled_line {
 
 // Convert cardiac assembly from text to semi-binary
 // Return an array of <address, data>
-std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const& asm, bool verbose = false);
+std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const& asm_data, bool verbose = false);
 
 // Extract data from raw string
 // Will throw if syntax error
-line parse_line(std::string const& str);
+line parse_line(integer id, std::string const& str);
 
 // Evaluate mathematical expressions in parameters
 // and replace label with their value
@@ -50,3 +52,5 @@ void check_label(line const& l, std::string const& original_line);
 void check_instruction(line const& l, std::string const& original_line);
 void check_parameters(line const& l, std::string const& original_line);
 void check_comment(line const& l, std::string const& original_line);
+
+#endif

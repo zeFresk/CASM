@@ -1,6 +1,8 @@
 /*
 	Every regex are stocked here
 */
+#ifndef regex_h
+#define regex_h
 
 #include <regex>
 
@@ -17,26 +19,26 @@ namespace _impl {
 	extern std::regex parameters_regex;
 
 	// For the moment all the parameters can be the same
-	using inp_params = parameters_regex;
-	using out_params = parameters_regex;
-	using lda_params = parameters_regex;
-	using ldi_params = parameters_regex;
-	using sta_params = parameters_regex;
-	using sti_params = parameters_regex;
-	using add_params = parameters_regex;
-	using sub_params = parameters_regex;
-	using jaz_params = parameters_regex;
-	using hrs_params = parameters_regex;
+	#define inp_params parameters_regex
+	#define out_params parameters_regex
+	#define lda_params parameters_regex
+	#define ldi_params parameters_regex
+	#define sta_params parameters_regex
+	#define sti_params parameters_regex
+	#define add_params parameters_regex
+	#define sub_params parameters_regex
+	#define jaz_params parameters_regex
+	#define hrs_params parameters_regex
 
 	constexpr auto double_digits_only = R"(^(?:0?\d{2}\D*)$)";
 	extern std::regex double_regex;
 
-	using at_params = double_regex;
+	#define at_params double_regex
 
 	constexpr auto triple_digits_only = R"(^(?:0?\d{3}\D*)$)";
 	extern std::regex triple_regex;
 
-	using word_params = triple_regex;
+	#define word_params triple_regex
 
 	constexpr auto just_a_number_str = R"(^\d+$)";
 	extern std::regex just_a_number;
@@ -47,3 +49,5 @@ namespace _impl {
 	constexpr auto evaluate_regex_str = R"(^\[\s*(\w*)\s*([+-])\s*(\w*)\s*\]$)";
 	extern std::regex evaluate_regex;
 }
+
+#endif

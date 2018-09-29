@@ -1,6 +1,8 @@
 /*
 	All existing instructions and their parameters
 */
+#ifndef instruction_h
+#define instructions_h
 
 #include "regex.h"
 #include "assembler.h"
@@ -11,14 +13,15 @@
 
 namespace _impl {
 
-	using special_id = std::numeric_limits<integer>::max();
+	constexpr integer special_id = std::numeric_limits<integer>::max();
 
 	struct parameter_data {
+		parameter_data() = delete;
 		integer id;
-		std::reference_wrapper<std::regex> reg_params
+		std::reference_wrapper<std::regex> reg_params;
 	};
 
-	std::unordered_map<std::string, std::pair<integer, std::reference_wrapper<std::regex>>> instructions{
+	std::unordered_map<std::string, parameter_data> instructions = {
 	{"INP", { 0, inp_params}},
 	{"OUT", { 1, out_params}},
 	{"LDA", { 2, lda_params}},
@@ -35,3 +38,5 @@ namespace _impl {
 	};
 
 }
+
+#endif

@@ -21,7 +21,7 @@ std::string get_filename(std::string const& str)
 
 std::vector<std::string> load_from_file(std::string const& filename)
 {
-	ifstream file{ filename };
+	std::ifstream file{ filename };
 	if (!file)
 		throw std::runtime_error{ std::string{"Unable to open " + filename}.c_str() };
 

@@ -14,17 +14,17 @@
 
 using namespace _impl;
 
-std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const& asm, bool verbose = false)
+std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const& asm_data, bool verbose)
 {
 	//Parsing a first time to separate labels, instructions, parameters and comments
 	v_log(verbose, "->Parsing");
 	std::vector<line> parsed_asm;
-	parsed.reserve(asm.size());
+	parsed_asm.reserve(asm_data.size());
 
-	std::size_t errors = 0
+	std::size_t errors = 0;
 
 	integer i = 1;
-	for (auto &e : asm) // parsing everything once
+	for (auto &e : asm_data) // parsing everything once
 	{
 		try {
 			parsed_asm.push_back(std::move(parse_line(i, e)));
@@ -34,7 +34,7 @@ std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const
 			++errors;
 			std::cout << "! in line " << err.what() << std::endl;
 		}
-		++i
+		++i;
 	}
 
 	//make instruction case-insensitive
@@ -46,7 +46,7 @@ std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const
 	for (auto &e : parsed_asm)
 	{
 		try {
-			check_line(e.corresponding_line,e, asm[e.corresponding_line]);
+			check_line(e, asm_data[e.corresponding_line]);
 		}
 		catch (base_asm_error const& err) {
 			++errors;
@@ -69,14 +69,14 @@ std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const
 	{
 		if (e.instruction == ".AT") // ordering instruction
 		{
-			current_id = std::stoi(e.parameters);
+			current_id = static_cast<integer>(std::stoul(e.parameters));
 		}
 		else if (e.instruction == ".START") // start instruction
 		{
 			if (start_id != special_id) // start already set ???
-				throw asm_logic_error{ e.corresponding_line, asm[e.corresponding_line], "error: two \".start\" found" };
+				throw asm_logic_error{ e.corresponding_line, asm_data[e.corresponding_line], "error: two \".start\" found" };
 
-			current_id = std::stoi(e.parameters);
+			current_id = static_cast<integer>(std::stoul(e.parameters));
 			start_id = current_id;
 		}
 		else
@@ -84,7 +84,7 @@ std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const
 			if (e.label != "") // this line has a label
 			{
 				if (std::find(std::begin(labels_map), std::end(labels_map), e.label) != std::end(labels_map)) // label already defined
-					throw asm_logic_error{ e.corresponding_line, asm[e.corresponding_line], std::string{"error: label already defined ["} +e.label + std::string{"]"} };
+					throw asm_logic_error{ e.corresponding_line, asm_data[e.corresponding_line], std::string{"error: label already defined ["} +e.label + std::string{"]"} };
 
 				labels_map[e.label] = current_id;
 			}
@@ -93,7 +93,7 @@ std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const
 		}
 
 		if (current_id >= 100) //overflow
-			throw asm_overflow{ e.corresponding_line, asm[e.corresponding_line], std::string{ "error: overflow id=" } + std::to_string(current_id) };
+			throw asm_overflow{ e.corresponding_line, asm_data[e.corresponding_line], std::string{ "error: overflow id=" } + std::to_string(current_id) };
 	}
 
 	// evaluating parameters
@@ -109,10 +109,10 @@ std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const
 	v_log(verbose, "->Assembling");
 	std::vector<std::pair<integer, integer>> ret{ semi_assembled_map.size() };
 
-	std::size_t i = 0
+	std::size_t j = 0;
 	for (auto &e : semi_assembled_map)
 	{
-		ret[i] = { e.first, instructions[e.second.instruction].second.first * 100 + e.second.parameter };
+		ret[j] = { e.first, (instructions[e.second.instruction]).id * 100 + e.second.parameter };
 	}
 
 	return ret;
@@ -126,7 +126,7 @@ semi_assembled_line evaluate_line(line const& l, std::unordered_map<std::string,
 
 	if (std::regex_match(l.parameters, just_a_number)) // parameters contains just a number
 	{
-		ret.parameter = std::stoi(l.parameters);
+		ret.parameter = static_cast<integer>(std::stoul(l.parameters));
 	}
 	else if (evaluate_parameter(l.parameters, labels_map) != special_id) // parameters contains only a label which exists in BDD
 	{
@@ -141,16 +141,16 @@ semi_assembled_line evaluate_line(line const& l, std::unordered_map<std::string,
 		std::string rhs = match[3].str();
 		std::string op = match[2].str();
 
-		integer left = convert_operand(lhs);
-		integer right = convert_operand(rhs);
+		integer left = convert_operand(lhs, labels_map, l);
+		integer right = convert_operand(rhs, labels_map, l);
 
 		if (op == std::string{ "-" }) // sub
 		{
-			ret.parameter = left - right;
+			ret.parameter = static_cast<integer>(left - right);
 		}
 		else // add
 		{
-			ret.parameter = left + right;
+			ret.parameter = static_cast<integer>(left + right);
 		}
 	}
 	else { throw syntax_error{ l.corresponding_line, l.parameters }; }
@@ -164,13 +164,13 @@ integer convert_operand(std::string const& op, std::unordered_map<std::string, i
 
 	if (std::regex_match(op, just_a_number)) // lhs is just a number
 	{
-		ret = std::stoi(op);
+		ret = static_cast<integer>(std::stoul(op));
 	}
 	else // lhs must be a label
 	{
 		ret = evaluate_parameter(op, labels_map);
-		if (left == special_id) // lhs isn't a number or a known label
-			asm_logic_error{ l.corresponding_line, l.parameters, std::string{ "error: Unknown label [" } + op + std::string{ "]" } },
+		if (ret == special_id) // lhs isn't a number or a known label
+			asm_logic_error{ l.corresponding_line, l.parameters, std::string{ "error: Unknown label [" } + op + std::string{ "]" } };
 	}
 
 	return ret;
@@ -182,7 +182,7 @@ integer evaluate_parameter(std::string const& p, std::unordered_map<std::string,
 
 	if (std::find(std::begin(map), std::end(map), p) != std::end(map)) // parameters contains only a label which exists in BDD
 	{
-		ret = labels_map[p];
+		ret = map.at(p);
 	}
 	
 	return ret;
@@ -214,10 +214,10 @@ line parse_line(integer id, std::string const& str)
 
 void check_line(line const& l, std::string const& str)
 {
-	check_label(l.label, str);
-	check_instruction(l.instruction, str);
-	check_parameters(l.parameters, str);
-	check_comment(l.comment, str)
+	check_label(l, str);
+	check_instruction(l, str);
+	check_parameters(l, str);
+	check_comment(l, str);
 }
 
 void check_label(line const& l, std::string const& original_line)
@@ -233,7 +233,7 @@ void check_instruction(line const& l, std::string const& original_line)
 
 void check_parameters(line const& l, std::string const& original_line)
 {
-	if (!std::regex_match(l.parameters, instructions[l.instruction])) // parameters is incorrect
+	if (!std::regex_match(l.parameters, static_cast<std::regex&>(instructions[l.instruction].reg_params))) // parameters is incorrect
 		throw syntax_error{ l.corresponding_line, original_line, std::string{"error: parameters are incorrect ["} +l.parameters + std::string{"]"} };
 }
 

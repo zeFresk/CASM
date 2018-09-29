@@ -27,7 +27,7 @@ configure_file(
 #Setting C++ flags
 set(CMAKE_CXX_STANDARD 14)
 if(MSVC)
-	set(CMAKE_CXX_FLAGS "/WX- /Wall /O2")
+	set(CMAKE_CXX_FLAGS "/experimental:external /external:W0 /external:I ${CMAKE_SYSTEM_INCLUDE_PATH} /WX- /Wall /wd4820 /O2")
 else()
 	set(CMAKE_CXX_FLAGS "-Wall -Wextra -pedantic -O2")
 endif()
