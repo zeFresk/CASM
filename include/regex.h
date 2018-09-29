@@ -8,8 +8,6 @@
 
 namespace _impl {
 
-	std::regex_constants::syntax_option_type flags = std::regex_constants::ECMAScript;
-
 	// https://regex101.com/r/eeEgLy/5
 	constexpr auto separate_line_str = R"(^\s*(\w*?):?\s?([A-Z]+?|\.\w+)\s+(\w+|\[.*?\])\s*(?:;\s*(.*)\s*|()\s*)$)";
 	extern std::regex separate_line;

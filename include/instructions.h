@@ -16,9 +16,8 @@ namespace _impl {
 	constexpr integer special_id = std::numeric_limits<integer>::max();
 
 	struct parameter_data {
-		parameter_data() = delete;
 		integer id;
-		std::reference_wrapper<std::regex> reg_params;
+		std::regex reg_params;
 	};
 
 	std::unordered_map<std::string, parameter_data> instructions = {

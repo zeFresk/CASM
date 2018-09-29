@@ -83,7 +83,7 @@ std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const
 		{
 			if (e.label != "") // this line has a label
 			{
-				if (std::find(std::begin(labels_map), std::end(labels_map), e.label) != std::end(labels_map)) // label already defined
+				if (/*std::find(std::begin(labels_map), std::end(labels_map), e.label)*/labels_map.find(e.label) != std::end(labels_map)) // label already defined
 					throw asm_logic_error{ e.corresponding_line, asm_data[e.corresponding_line], std::string{"error: label already defined ["} +e.label + std::string{"]"} };
 
 				labels_map[e.label] = current_id;
@@ -112,7 +112,7 @@ std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const
 	std::size_t j = 0;
 	for (auto &e : semi_assembled_map)
 	{
-		ret[j] = { e.first, (instructions[e.second.instruction]).id * 100 + e.second.parameter };
+		ret[j] = { e.first, (instructions.at(e.second.instruction)).id * 100 + e.second.parameter };
 	}
 
 	return ret;
@@ -180,7 +180,7 @@ integer evaluate_parameter(std::string const& p, std::unordered_map<std::string,
 {
 	integer ret = special_id;
 
-	if (std::find(std::begin(map), std::end(map), p) != std::end(map)) // parameters contains only a label which exists in BDD
+	if (/*std::find(std::begin(map), std::end(map), p)*/map.find(p) != std::end(map)) // parameters contains only a label which exists in BDD
 	{
 		ret = map.at(p);
 	}
@@ -220,14 +220,14 @@ void check_line(line const& l, std::string const& str)
 	check_comment(l, str);
 }
 
-void check_label(line const& l, std::string const& original_line)
+void check_label(line const&, std::string const&)
 {
 	// nothing to check in labels for the moment
 }
 
 void check_instruction(line const& l, std::string const& original_line)
 {
-	if (std::find(std::begin(instructions), std::end(instructions), l.instruction) == std::end(instructions)) // instruction not found
+	if (/*std::find(std::begin(instructions), std::end(instructions), l.instruction)*/instructions.find(l.instruction) == std::end(instructions)) // instruction not found
 		throw syntax_error{ l.corresponding_line, original_line, std::string{"error: unknown instruction ["} +l.instruction + std::string{"]"} };
 }
 
@@ -237,7 +237,7 @@ void check_parameters(line const& l, std::string const& original_line)
 		throw syntax_error{ l.corresponding_line, original_line, std::string{"error: parameters are incorrect ["} +l.parameters + std::string{"]"} };
 }
 
-void check_comment(line const& l, std::string const& original_line)
+void check_comment(line const&, std::string const&)
 {
 	//nothing to check for the moment
 }

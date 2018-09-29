@@ -33,7 +33,7 @@ else()
 endif()
 
 #Check for Boostd
-set(Boost_USE_STATIC_LIBS	ON)
+set(Boost_USE_STATIC_LIBS	ON) #Quick fix
 find_package(Boost REQUIRED program_options)
 
 #Main executable
