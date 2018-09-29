@@ -28,3 +28,15 @@ class syntax_error : public asm_error {
 		asm_error{line, line_str, msg}
 	{}
 };
+
+class asm_logic_error : public asm_error {
+	asm_logic_error(std::size_t line, std::string const& line_str, std::string const& msg = "error: logic error") :
+		asm_error{ line, line_str, msg }
+	{}
+};
+
+class asm_overflow : public asm_error {
+	asm_overflow(std::size_t line, std::string const& line_str, std::string const& msg = "error: overflow") :
+		asm_error{ line, line_str, msg }
+	{}
+};

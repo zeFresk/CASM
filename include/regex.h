@@ -27,4 +27,23 @@ namespace _impl {
 	using sub_params = parameters_regex;
 	using jaz_params = parameters_regex;
 	using hrs_params = parameters_regex;
+
+	constexpr auto double_digits_only = R"(^(?:0?\d{2}\D*)$)";
+	extern std::regex double_regex;
+
+	using at_params = double_regex;
+
+	constexpr auto triple_digits_only = R"(^(?:0?\d{3}\D*)$)";
+	extern std::regex triple_regex;
+
+	using word_params = triple_regex;
+
+	constexpr auto just_a_number_str = R"(^\d+$)";
+	extern std::regex just_a_number;
+
+	constexpr auto is_expression_str = R"(^\[\s*\w*\s*[+-]\s*\w*\s*\]$)";
+	extern std::regex is_expression;
+
+	constexpr auto evaluate_regex_str = R"(^\[\s*(\w*)\s*([+-])\s*(\w*)\s*\]$)";
+	extern std::regex evaluate_regex;
 }

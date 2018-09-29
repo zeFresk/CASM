@@ -7,6 +7,7 @@
 #include <vector>
 #include <utility>
 #include <string>
+#include <unordered_map>
 
 using integer = std::uint16_t;
 
@@ -18,6 +19,11 @@ struct line {
 	std::string comment;
 };
 
+struct semi_assembled_line {
+	std::string instruction;
+	integer parameter;
+};
+
 // Convert cardiac assembly from text to semi-binary
 // Return an array of <address, data>
 std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const& asm, bool verbose = false);
@@ -25,6 +31,14 @@ std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const
 // Extract data from raw string
 // Will throw if syntax error
 line parse_line(std::string const& str);
+
+// Evaluate mathematical expressions in parameters
+// and replace label with their value
+semi_assembled_line evaluate_line(line const& l, std::unordered_map<std::string, integer> const& labels_map);
+
+//helper functions
+integer evaluate_parameter(std::string const& p, std::unordered_map<std::string, integer> const& map);
+integer convert_operand(std::string const& op, std::unordered_map<std::string, integer> const& labels_map, line const& l);
 
 // Check if a line doesn't contain any error
 // Will throw if it is the case

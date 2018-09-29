@@ -6,6 +6,7 @@
 
 #include "opt.h"
 #include "tools.h"
+#include "assembler.h"
 
 #include <iostream>
 #include <fstream>

@@ -9,12 +9,15 @@
 #include <regex>
 #include <cassert>
 #include <iostream>
+#include <map>
+#include <unordered_map>
 
 using namespace _impl;
 
 std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const& asm, bool verbose = false)
 {
 	//Parsing a first time to separate labels, instructions, parameters and comments
+	v_log(verbose, "->Parsing");
 	std::vector<line> parsed_asm;
 	parsed.reserve(asm.size());
 
@@ -38,6 +41,7 @@ std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const
 	for (auto &e : parsed_asm)
 		std::transform(std::begin(e.instruction), std::end(e.instruction), std::begin(e.instruction), [](unsigned char c) {return std::toupper(c); });
 
+	v_log(verbose, "->Checking for advanced syntax error");
 	//check for more complicated errors
 	for (auto &e : parsed_asm)
 	{
@@ -53,6 +57,135 @@ std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const
 	if (errors > 0)
 		throw assembly_failed{ errors };
 
+	// ordering the lines
+	v_log(verbose, "->Creating structure");
+	std::unordered_map<std::string, integer> labels_map; // will contain each position associated with a label
+	std::map<integer, line> lines_map; // will contain every line at the correct place
+	integer start_id = special_id;
+
+	integer current_id = 20;
+
+	for (auto &e : parsed_asm)
+	{
+		if (e.instruction == ".AT") // ordering instruction
+		{
+			current_id = std::stoi(e.parameters);
+		}
+		else if (e.instruction == ".START") // start instruction
+		{
+			if (start_id != special_id) // start already set ???
+				throw asm_logic_error{ e.corresponding_line, asm[e.corresponding_line], "error: two \".start\" found" };
+
+			current_id = std::stoi(e.parameters);
+			start_id = current_id;
+		}
+		else
+		{
+			if (e.label != "") // this line has a label
+			{
+				if (std::find(std::begin(labels_map), std::end(labels_map), e.label) != std::end(labels_map)) // label already defined
+					throw asm_logic_error{ e.corresponding_line, asm[e.corresponding_line], std::string{"error: label already defined ["} +e.label + std::string{"]"} };
+
+				labels_map[e.label] = current_id;
+			}
+			lines_map[current_id] = e; // copy the current line at the right place
+			++current_id;
+		}
+
+		if (current_id >= 100) //overflow
+			throw asm_overflow{ e.corresponding_line, asm[e.corresponding_line], std::string{ "error: overflow id=" } + std::to_string(current_id) };
+	}
+
+	// evaluating parameters
+	v_log(verbose, "->Resolving labels and evaluating parameters");
+	std::map<integer, semi_assembled_line> semi_assembled_map;
+
+	for (auto &e : lines_map)
+	{
+		semi_assembled_map[e.first] = evaluate_line(e.second, labels_map);
+	}
+
+	// assembling
+	v_log(verbose, "->Assembling");
+	std::vector<std::pair<integer, integer>> ret{ semi_assembled_map.size() };
+
+	std::size_t i = 0
+	for (auto &e : semi_assembled_map)
+	{
+		ret[i] = { e.first, instructions[e.second.instruction].second.first * 100 + e.second.parameter };
+	}
+
+	return ret;
+
+}
+
+semi_assembled_line evaluate_line(line const& l, std::unordered_map<std::string, integer> const& labels_map)
+{
+	semi_assembled_line ret;
+	ret.instruction = l.instruction;
+
+	if (std::regex_match(l.parameters, just_a_number)) // parameters contains just a number
+	{
+		ret.parameter = std::stoi(l.parameters);
+	}
+	else if (evaluate_parameter(l.parameters, labels_map) != special_id) // parameters contains only a label which exists in BDD
+	{
+		ret.parameter = evaluate_parameter(l.parameters, labels_map);
+	}
+	else if (std::regex_match(l.parameters, is_expression)) // parameters is an expression
+	{
+		std::smatch match;
+		std::regex_match(l.parameters, match, evaluate_regex); // 1 = lhs, 2 = op, 3 = rhs
+		
+		std::string lhs = match[1].str();
+		std::string rhs = match[3].str();
+		std::string op = match[2].str();
+
+		integer left = convert_operand(lhs);
+		integer right = convert_operand(rhs);
+
+		if (op == std::string{ "-" }) // sub
+		{
+			ret.parameter = left - right;
+		}
+		else // add
+		{
+			ret.parameter = left + right;
+		}
+	}
+	else { throw syntax_error{ l.corresponding_line, l.parameters }; }
+
+	return ret;
+}
+
+integer convert_operand(std::string const& op, std::unordered_map<std::string, integer> const& labels_map, line const& l)
+{
+	integer ret;
+
+	if (std::regex_match(op, just_a_number)) // lhs is just a number
+	{
+		ret = std::stoi(op);
+	}
+	else // lhs must be a label
+	{
+		ret = evaluate_parameter(op, labels_map);
+		if (left == special_id) // lhs isn't a number or a known label
+			asm_logic_error{ l.corresponding_line, l.parameters, std::string{ "error: Unknown label [" } + op + std::string{ "]" } },
+	}
+
+	return ret;
+}
+
+integer evaluate_parameter(std::string const& p, std::unordered_map<std::string, integer> const& map)
+{
+	integer ret = special_id;
+
+	if (std::find(std::begin(map), std::end(map), p) != std::end(map)) // parameters contains only a label which exists in BDD
+	{
+		ret = labels_map[p];
+	}
+	
+	return ret;
 }
 
 line parse_line(integer id, std::string const& str)
@@ -95,13 +228,13 @@ void check_label(line const& l, std::string const& original_line)
 void check_instruction(line const& l, std::string const& original_line)
 {
 	if (std::find(std::begin(instructions), std::end(instructions), l.instruction) == std::end(instructions)) // instruction not found
-		throw syntax_error{ l.corresponding_line, original_line, "error: unknown instruction [" + l.instruction + std::string{"]"} };
+		throw syntax_error{ l.corresponding_line, original_line, std::string{"error: unknown instruction ["} +l.instruction + std::string{"]"} };
 }
 
 void check_parameters(line const& l, std::string const& original_line)
 {
 	if (!std::regex_match(l.parameters, instructions[l.instruction])) // parameters is incorrect
-		throw syntax_error{ l.corresponding_line, original_line, "error: parameters are incorrect [" + l.parameters + std::string{"]"} };
+		throw syntax_error{ l.corresponding_line, original_line, std::string{"error: parameters are incorrect ["} +l.parameters + std::string{"]"} };
 }
 
 void check_comment(line const& l, std::string const& original_line)
