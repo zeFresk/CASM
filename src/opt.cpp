@@ -36,11 +36,11 @@ options parse_args(int argc, char* argv[])
 
 	// Declare a group of options that will be 
 	// allowed only on command line
-	po::options_description generic("Generic options");
-	generic.add_options()
+	po::options_description gen("Generic options");
+	gen.add_options()
 		("version,v", "print this program version along with usefull informations")
 		("help", "produce help message")
-		("config,c", po::value<std::string>(&config_file)->default_value("config.cfg"),"name of configuration's file")
+		("config,c", po::value<std::string>(&config_file),"path to configuration file")
 		;
 
 	// Declare a group of options that will be 
@@ -57,18 +57,18 @@ options parse_args(int argc, char* argv[])
 	// in config file, but will not be shown to the user.
 	po::options_description hidden("Hidden options");
 	hidden.add_options()
-		("input-file", po::value<std::vector<std::string>>(&ret.in), "input file(s)")
+		("input-file", po::value<std::vector<std::string>>(), "input file(s)")
 		;
 
 
 	po::options_description cmdline_options;
-	cmdline_options.add(generic).add(config).add(hidden);
+	cmdline_options.add(gen).add(config).add(hidden);
 
 	po::options_description config_file_options;
 	config_file_options.add(config).add(hidden);
 
 	po::options_description visible("Allowed options");
-	visible.add(generic).add(config);
+	visible.add(gen).add(config);
 
 	//set first parameter to be input file
 	po::positional_options_description p;
@@ -80,16 +80,18 @@ options parse_args(int argc, char* argv[])
 		options(cmdline_options).positional(p).run(), vm);
 	notify(vm);
 
-	std::ifstream ifs(config_file);
-	if (!ifs)
-	{
-		throw std::runtime_error("Error: unable to open config file");
-	}
-	else
-	{
-		//parsing config file
-		store(parse_config_file(ifs, config_file_options), vm);
-		notify(vm);
+	if (vm.count("config")) {
+		std::ifstream ifs(config_file);
+		if (!ifs)
+		{
+			throw std::runtime_error("Error: unable to open config file");
+		}
+		else
+		{
+			//parsing config file
+			store(parse_config_file(ifs, config_file_options), vm);
+			notify(vm);
+		}
 	}
 
 	if (vm.count("help")) {

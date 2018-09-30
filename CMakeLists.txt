@@ -15,8 +15,8 @@ endif()
 #adding includes and sources
 set(INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include")
 include_directories("${INCLUDE_DIR}")
-file(GLOB SOURCES "src/*.cpp")
 set(SRC_DIR "${PROJECT_SOURCE_DIR}/src")
+file(GLOB SOURCES "${SRC_DIR}/*.cpp")
 
 #configuration header
 configure_file(
@@ -27,8 +27,14 @@ configure_file(
 #Setting C++ flags
 set(CMAKE_CXX_STANDARD 14)
 if(MSVC)
-	set(CMAKE_CXX_FLAGS "/experimental:external /external:W0 /external:I ${CMAKE_SYSTEM_INCLUDE_PATH} /WX- /Wall /wd4820 /O2")
-	add_definitions("/EHsc") #maybe ? WTF, it works !!!
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX- /Wall /wd4820 /O2")
+
+	if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.14) #disable external warning
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /experimental:external /external:W0 ")
+		set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "/external:I ")
+	endif()
+
+	add_definitions("/EHsc") #maybe ? WTF, it works !!! (Fix Boost link error to exceptions)exceptions
 else()
 	set(CMAKE_CXX_FLAGS "-Wall -Wextra -pedantic -O2")
 endif()
@@ -41,7 +47,7 @@ find_package(Boost 1.68 REQUIRED COMPONENTS program_options)
 if(Boost_FOUND)
 	message(STATUS "found BOOST: " ${BOOST_ROOT})
 	include_directories(${Boost_INCLUDE_DIRS})
-	add_executable(CAssembler  ${SRC_DIR}/main.cpp ${SRC_DIR}/assembler.cpp ${SRC_DIR}/instructions.cpp  ${SRC_DIR}/regex.cpp  ${SRC_DIR}/opt.cpp ${SRC_DIR}/tools.cpp)
+	add_executable(CAssembler  ${SOURCES})
 	target_link_libraries(CAssembler ${Boost_LIBRARIES})
 else()
 	message(FATAL_ERROR "Error: Couldn't find Boost")
