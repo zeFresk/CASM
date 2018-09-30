@@ -112,7 +112,7 @@ std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const
 	std::size_t j = 0;
 	for (auto &e : semi_assembled_map)
 	{
-		ret[j] = { e.first, (instructions.at(e.second.instruction)).id * 100 + e.second.parameter };
+		ret[j] = { e.first, (Instructions::get().at(e.second.instruction)).id * 100 + e.second.parameter };
 	}
 
 	return ret;
@@ -227,13 +227,13 @@ void check_label(line const&, std::string const&)
 
 void check_instruction(line const& l, std::string const& original_line)
 {
-	if (/*std::find(std::begin(instructions), std::end(instructions), l.instruction)*/instructions.find(l.instruction) == std::end(instructions)) // instruction not found
+	if (/*std::find(std::begin((Instructions::get())), std::end((Instructions::get())), l.instruction)*/(Instructions::get()).find(l.instruction) == std::end((Instructions::get()))) // instruction not found
 		throw syntax_error{ l.corresponding_line, original_line, std::string{"error: unknown instruction ["} +l.instruction + std::string{"]"} };
 }
 
 void check_parameters(line const& l, std::string const& original_line)
 {
-	if (!std::regex_match(l.parameters, static_cast<std::regex&>(instructions[l.instruction].reg_params))) // parameters is incorrect
+	if (!std::regex_match(l.parameters, static_cast<std::regex&>((Instructions::get())[l.instruction].reg_params))) // parameters is incorrect
 		throw syntax_error{ l.corresponding_line, original_line, std::string{"error: parameters are incorrect ["} +l.parameters + std::string{"]"} };
 }
 
