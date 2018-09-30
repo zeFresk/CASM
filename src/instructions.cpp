@@ -20,7 +20,7 @@ namespace _impl {
 		instructions_["JAZ"] = { 8, jaz_params };
 		instructions_["HRS"] = { 9, hrs_params };
 		instructions_[".AT"] = { special_id, at_params };
-		instructions_[".WORD"] = { special_id, word_params };
+		instructions_[".WORD"] = { 0, word_params };
 		instructions_[".START"] = { special_id, at_params };
 	}
 

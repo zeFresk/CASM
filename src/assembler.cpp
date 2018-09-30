@@ -17,13 +17,13 @@ using namespace _impl;
 std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const& asm_data, integer& strt, bool verbose)
 {
 	//Parsing a first time to separate labels, instructions, parameters and comments
-	v_log(verbose, "->Parsing");
+	v_log(verbose, "->Parsing\n");
 	std::vector<line> parsed_asm;
 	parsed_asm.reserve(asm_data.size());
 
 	std::size_t errors = 0;
 
-	integer i = 1;
+	integer i = 0;
 	for (auto &e : asm_data) // parsing everything once
 	{
 		try {
@@ -41,7 +41,7 @@ std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const
 	for (auto &e : parsed_asm)
 		std::transform(std::begin(e.instruction), std::end(e.instruction), std::begin(e.instruction), [](unsigned char c) {return std::toupper(c); });
 
-	v_log(verbose, "->Checking for advanced syntax error");
+	v_log(verbose, "->Checking for advanced syntax error\n");
 	//check for more complicated errors
 	for (auto &e : parsed_asm)
 	{
@@ -55,7 +55,7 @@ std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const
 	}
 
 	// ordering the lines
-	v_log(verbose, "->Creating structure");
+	v_log(verbose, "->Creating structure\n");
 	std::unordered_map<std::string, integer> labels_map; // will contain each position associated with a label
 	std::map<integer, line> lines_map; // will contain every line at the correct place
 	integer start_id = special_id;
@@ -77,7 +77,7 @@ std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const
 				current_id = static_cast<integer>(std::stoul(e.parameters));
 				start_id = current_id;
 			}
-			else
+			else if (e.instruction != "")
 			{
 				if (e.label != "") // this line has a label
 				{
@@ -111,7 +111,7 @@ std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const
 	}
 
 	// evaluating parameters
-	v_log(verbose, "->Resolving labels and evaluating parameters");
+	v_log(verbose, "->Resolving labels and evaluating parameters\n");
 	std::map<integer, semi_assembled_line> semi_assembled_map;
 
 	for (auto &e : lines_map)
@@ -130,13 +130,14 @@ std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const
 		throw assembly_failed{ errors };
 
 	// assembling
-	v_log(verbose, "->Assembling");
+	v_log(verbose, "->Assembling\n");
 	std::vector<std::pair<integer, integer>> ret{ semi_assembled_map.size() };
 
 	std::size_t j = 0;
 	for (auto &e : semi_assembled_map)
 	{
 		ret[j] = { e.first, (Instructions::get().at(e.second.instruction)).id * 100 + e.second.parameter };
+		++j;
 	}
 
 	return ret;
@@ -226,12 +227,12 @@ line parse_line(integer id, std::string const& str)
 	else // no basic syntax error
 	{
 		//storing matches
-		assert(match.size() == 5);
+		assert(match.size() == 6);
 		ret.corresponding_line = id;
 		ret.label = match[1].str();
 		ret.instruction = match[2].str();
 		ret.parameters = match[3].str();
-		ret.comment = match[4].str();
+		ret.comment = match[5].str();
 	}
 	return ret;
 }
@@ -251,14 +252,18 @@ void check_label(line const&, std::string const&)
 
 void check_instruction(line const& l, std::string const& original_line)
 {
-	if (/*std::find(std::begin((Instructions::get())), std::end((Instructions::get())), l.instruction)*/(Instructions::get()).find(l.instruction) == std::end((Instructions::get()))) // instruction not found
-		throw syntax_error{ l.corresponding_line, original_line, std::string{"error: unknown instruction ["} +l.instruction + std::string{"]"} };
+	if (l.instruction != std::string{ "" }) {
+		if (/*std::find(std::begin((Instructions::get())), std::end((Instructions::get())), l.instruction)*/(Instructions::get()).find(l.instruction) == std::end((Instructions::get()))) // instruction not found
+			throw syntax_error{ l.corresponding_line, original_line, std::string{"error: unknown instruction ["} +l.instruction + std::string{"]"} };
+	}
 }
 
 void check_parameters(line const& l, std::string const& original_line)
 {
-	if (!std::regex_match(l.parameters, static_cast<std::regex&>((Instructions::get())[l.instruction].reg_params))) // parameters is incorrect
-		throw syntax_error{ l.corresponding_line, original_line, std::string{"error: parameters are incorrect ["} +l.parameters + std::string{"]"} };
+	if (l.parameters != std::string{ "" }) {
+		if (!std::regex_match(l.parameters, static_cast<std::regex&>((Instructions::get()).at(l.instruction).reg_params))) // parameters is incorrect
+			throw syntax_error{ l.corresponding_line, original_line, std::string{"error: parameters are incorrect ["} +l.parameters + std::string{"]"} };
+	}
 }
 
 void check_comment(line const&, std::string const&)

@@ -1,12 +1,18 @@
 #include "serialize.h"
 
+#include <iomanip>
+
 #include <boost/endian/conversion.hpp>
 
 void serialize_as_txt(std::vector<std::pair<integer, integer>> const& in, integer start, std::ostream& out)
 {
 	out << start << "\n";
 	for (auto &e : in)
-		out << e.first << ": " << e.second << "\n";
+	{
+		out << std::setfill('0') << std::setw(2) << e.first;
+		out << ": ";
+		out << std::setfill('0') << std::setw(3) << e.second << "\n";
+	}
 }
 
 

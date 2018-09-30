@@ -23,9 +23,9 @@ void check_args(options const& opt)
 
 void version()
 {
-	std::cout << "CASM (" << BITS << ") v" << MAJOR_VERSION << "." << MINOR_VERSION << "\n"
+	std::cout << "CAssembler (x" << BITS << ") version " << MAJOR_VERSION << "." << MINOR_VERSION << "\n"
 		<< "Compiled with " << COMPILER_ID << " v" << COMPILER_VERSION << "\n"
-		<< "CXX_FLAGS=" << CXX_FLAGS << std::endl;
+		/*<< "CXX_FLAGS=" << CXX_FLAGS */<< std::endl;
 }
 
 options parse_args(int argc, char* argv[])
@@ -48,17 +48,17 @@ options parse_args(int argc, char* argv[])
 	// config file
 	po::options_description config("Configuration");
 	config.add_options()
-		("verbose,V", "print more information during assembly process"),
-		("human-readable,h", "print output as text rather than binary"),
-		("file,f", po::value<std::vector<std::string>>(&ret.out)->composing(), "output file(s), default is ${input_filename}.cbin"),
-		("nofile", "print output binary instead of saving it")
+		("verbose,V","print more information during assembly process")
+		("human-readable,h", "print output as text rather than binary")
+		("file,f", po::value<std::vector<std::string>>(&ret.out)->composing(), "output file(s), default is ${input_filename}.cbin")
+		("no-file", "print output binary instead of saving it")
 		;
 
 	// Hidden options, will be allowed both on command line and
 	// in config file, but will not be shown to the user.
 	po::options_description hidden("Hidden options");
 	hidden.add_options()
-		("input-file", po::value<std::vector<std::string>>(), "input file(s)")
+		("input-file", po::value<std::vector<std::string>>(&ret.in)->composing(), "input file(s)")
 		;
 
 
@@ -98,14 +98,16 @@ options parse_args(int argc, char* argv[])
 	if (vm.count("help")) {
 		ret.assemble = false; //no assembly to do
 		std::cout << visible << std::endl;
+		return ret;
 	}
 
 	if (vm.count("version")) {
 		ret.assemble = false; //no assembly to do
 		version();
+		return ret;
 	}
 
-	ret.no_file = vm.count("nofile");
+	ret.no_file = vm.count("no-file");
 
 	ret.verbose = vm.count("verbose");
 
