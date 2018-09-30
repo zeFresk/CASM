@@ -28,7 +28,7 @@ struct semi_assembled_line {
 
 // Convert cardiac assembly from text to semi-binary
 // Return an array of <address, data>
-std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const& asm_data, bool verbose = false);
+std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const& asm_data, integer& start_id, bool verbose = false);
 
 // Extract data from raw string
 // Will throw if syntax error

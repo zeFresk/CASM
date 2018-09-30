@@ -6,6 +6,7 @@
 
 struct options
 {
+	bool binary_file;
 	bool no_file;
 	bool verbose;
 	bool assemble; //do we need to assemble ?

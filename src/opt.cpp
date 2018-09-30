@@ -48,8 +48,9 @@ options parse_args(int argc, char* argv[])
 	// config file
 	po::options_description config("Configuration");
 	config.add_options()
-		("verbose,V", "print more information during assembly process")
-		("file,f", po::value<std::vector<std::string>>(&ret.out)->composing(), "output file(s), default is ${input_filename}.cbin")
+		("verbose,V", "print more information during assembly process"),
+		("human-readable,h", "print output as text rather than binary"),
+		("file,f", po::value<std::vector<std::string>>(&ret.out)->composing(), "output file(s), default is ${input_filename}.cbin"),
 		("nofile", "print output binary instead of saving it")
 		;
 
@@ -107,6 +108,9 @@ options parse_args(int argc, char* argv[])
 	ret.no_file = vm.count("nofile");
 
 	ret.verbose = vm.count("verbose");
+
+	ret.binary_file = !vm.count("human-readable");
+
 
 	return ret;
 }

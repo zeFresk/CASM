@@ -14,7 +14,7 @@
 
 using namespace _impl;
 
-std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const& asm_data, bool verbose)
+std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const& asm_data, integer& strt, bool verbose)
 {
 	//Parsing a first time to separate labels, instructions, parameters and comments
 	v_log(verbose, "->Parsing");
@@ -54,9 +54,6 @@ std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const
 		}
 	}
 
-	if (errors > 0)
-		throw assembly_failed{ errors };
-
 	// ordering the lines
 	v_log(verbose, "->Creating structure");
 	std::unordered_map<std::string, integer> labels_map; // will contain each position associated with a label
@@ -67,33 +64,50 @@ std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const
 
 	for (auto &e : parsed_asm)
 	{
-		if (e.instruction == ".AT") // ordering instruction
-		{
-			current_id = static_cast<integer>(std::stoul(e.parameters));
-		}
-		else if (e.instruction == ".START") // start instruction
-		{
-			if (start_id != special_id) // start already set ???
-				throw asm_logic_error{ e.corresponding_line, asm_data[e.corresponding_line], "error: two \".start\" found" };
-
-			current_id = static_cast<integer>(std::stoul(e.parameters));
-			start_id = current_id;
-		}
-		else
-		{
-			if (e.label != "") // this line has a label
+		try {
+			if (e.instruction == ".AT") // ordering instruction
 			{
-				if (/*std::find(std::begin(labels_map), std::end(labels_map), e.label)*/labels_map.find(e.label) != std::end(labels_map)) // label already defined
-					throw asm_logic_error{ e.corresponding_line, asm_data[e.corresponding_line], std::string{"error: label already defined ["} +e.label + std::string{"]"} };
-
-				labels_map[e.label] = current_id;
+				current_id = static_cast<integer>(std::stoul(e.parameters));
 			}
-			lines_map[current_id] = e; // copy the current line at the right place
-			++current_id;
-		}
+			else if (e.instruction == ".START") // start instruction
+			{
+				if (start_id != special_id) // start already set ???
+					throw asm_logic_error{ e.corresponding_line, asm_data[e.corresponding_line], "error: two \".start\" found" };
 
-		if (current_id >= 100) //overflow
-			throw asm_overflow{ e.corresponding_line, asm_data[e.corresponding_line], std::string{ "error: overflow id=" } + std::to_string(current_id) };
+				current_id = static_cast<integer>(std::stoul(e.parameters));
+				start_id = current_id;
+			}
+			else
+			{
+				if (e.label != "") // this line has a label
+				{
+					if (/*std::find(std::begin(labels_map), std::end(labels_map), e.label)*/labels_map.find(e.label) != std::end(labels_map)) // label already defined
+						throw asm_logic_error{ e.corresponding_line, asm_data[e.corresponding_line], std::string{"error: label already defined ["} +e.label + std::string{"]"} };
+
+					labels_map[e.label] = current_id;
+				}
+				lines_map[current_id] = e; // copy the current line at the right place
+				++current_id;
+			}
+
+			if (current_id >= 100) //overflow
+				throw asm_overflow{ e.corresponding_line, asm_data[e.corresponding_line], std::string{ "error: overflow id=" } +std::to_string(current_id) };
+		}
+		catch (base_asm_error const& err) {
+			++errors;
+			std::cout << "! in line " << err.what() << std::endl;
+		}
+	}
+	
+	// Checking for a .start
+	try {
+		if (start_id == special_id) // no start defined
+			throw asm_logic_error{ 0, "", "error: no .start found" };
+		strt = start_id;
+	}
+	catch (base_asm_error const& err) {
+		++errors;
+		std::cout << "! in line " << err.what() << std::endl;
 	}
 
 	// evaluating parameters
@@ -102,8 +116,18 @@ std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const
 
 	for (auto &e : lines_map)
 	{
-		semi_assembled_map[e.first] = evaluate_line(e.second, labels_map);
+		try {
+			semi_assembled_map[e.first] = evaluate_line(e.second, labels_map);
+		}
+		catch (base_asm_error const& err) {
+			++errors;
+			std::cout << "! in line " << err.what() << std::endl;
+		}
 	}
+
+	// Stop here if at least one error occured
+	if (errors > 0)
+		throw assembly_failed{ errors };
 
 	// assembling
 	v_log(verbose, "->Assembling");
