@@ -1,5 +1,6 @@
 #include "serialize.h"
 
+#include <iostream>
 #include <iomanip>
 
 #include <boost/endian/conversion.hpp>

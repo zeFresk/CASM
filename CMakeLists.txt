@@ -41,7 +41,7 @@ endif()
 
 #Check for Boostd
 set(Boost_USE_STATIC_LIBS	ON) #Quick fix
-find_package(Boost 1.68 REQUIRED COMPONENTS program_options)
+find_package(Boost REQUIRED COMPONENTS program_options)
 
 #Main executable
 if(Boost_FOUND)
