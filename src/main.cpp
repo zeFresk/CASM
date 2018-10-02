@@ -15,11 +15,8 @@
 
 int main(int argc, char* argv[])
 {
-	//int ac = 3; // only for debugging
-	//char* av[] = { "C:/", "--config", "config.cfg" }; //only for debugging
 	try {
 		auto opts = parse_args(argc, argv);
-		//auto opts = parse_args(ac, av); //only for debugging
 		check_args(opts);
 
 		if (opts.assemble)

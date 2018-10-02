@@ -17,7 +17,7 @@ void check_args(options const& opt)
 {
 	if (opt.in.empty() && opt.assemble)
 	{
-		throw po::error("Error: No input file provided");
+		throw po::error("Error: No input file provided, try --help.");
 	}
 }
 
@@ -38,7 +38,7 @@ options parse_args(int argc, char* argv[])
 	// allowed only on command line
 	po::options_description gen("Generic options");
 	gen.add_options()
-		("version,v", "print this program version along with usefull informations")
+		("version", "print this program version along with usefull informations")
 		("help", "produce help message")
 		("config,c", po::value<std::string>(&config_file),"path to configuration file")
 		;
@@ -48,7 +48,7 @@ options parse_args(int argc, char* argv[])
 	// config file
 	po::options_description config("Configuration");
 	config.add_options()
-		("verbose,V","print more information during assembly process")
+		("verbose,v","print more information during assembly process")
 		("human-readable,h", "print output as text rather than binary")
 		("file,f", po::value<std::vector<std::string>>(&ret.out)->composing(), "output file(s), default is ${input_filename}.cbin")
 		("no-file", "print output binary instead of saving it")

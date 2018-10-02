@@ -19,6 +19,8 @@ std::string get_filename(std::string const& str);
 // Throw if unable to open file
 std::vector<std::string> load_from_file(std::string const& filename);
 
+template <typename T>
+void unused(T const&) {}
 
 // Print everything concatened if verbose is true
 // At least one argument beside the first one must be passed
@@ -28,6 +30,7 @@ void v_log(bool verbose, Args&& ...args)
 	if (verbose)
 	{
 		int dummy[sizeof...(args)] = { (std::cout << args, 0)... };
+		unused(dummy); // dummy var is necessary but we don't want any warning
 	}
 }
 

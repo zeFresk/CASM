@@ -22,7 +22,8 @@ void serialize_as_txt(std::vector<std::pair<integer, integer>> const& in, intege
 */
 void serialize_as_binary(std::vector<std::pair<integer, integer>> const & in, integer start, std::ostream & out)
 {
-	out.write(reinterpret_cast<const char*>(boost::endian::native_to_little(start)), sizeof(integer));
+	integer start_tmp = boost::endian::native_to_little(start);
+	out.write(reinterpret_cast<const char*>(&start_tmp), sizeof(integer));
 	for (auto &e : in)
 	{
 		integer tmp_l_value; // we need a lvalue to serialize
