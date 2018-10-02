@@ -7,6 +7,7 @@ Collection of usefull standalone functions
 
 #include <vector>
 #include <string>
+#include <iostream>
 
 // Retrieve filename without extension
 // If no extension return as it is

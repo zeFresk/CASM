@@ -86,7 +86,9 @@ configure_file(
 	)
 
 #Setting C++ flags
-set(CMAKE_CXX_STANDARD 14)
+
+set_property(TARGET CAssembler PROPERTY CXX_STANDARD 14)
+
 if(MSVC)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX- /Wall /wd4820 /O2")
 
@@ -97,7 +99,7 @@ if(MSVC)
 
 	add_definitions("/EHsc") #maybe ? WTF, it works !!! (Fix Boost link error to exceptions)
 else()
-	set(CMAKE_CXX_FLAGS "-Wall -Wextra -pedantic -O2")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic -O2")
 endif()
 
 #Check for Boost
