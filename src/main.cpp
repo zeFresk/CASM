@@ -25,15 +25,11 @@ int main(int argc, char* argv[])
 			{
 				// Opening output file for writing
 				// We have to be carefull because of nofile option
-				std::ostream* out;
+				std::ostream* out = &std::cout; //default is std::cout
 				std::ofstream out_file;
 				std::string filename;
 
-				if (opts.no_file) // output is set to stdout
-				{
-					out = &std::cout;
-				}
-				else // We write in a file
+				if (!opts.no_file) // We retrieve filename to write in a file if --no-file is not set
 				{
 					std::string base_filename = (i >= opts.out.size()) ? get_filename(opts.in[i]) : opts.out[i]; // user hasn't provided a name ?
 					filename = base_filename + (opts.binary_file ? ".cbin" : ".txt"); // is output a binary file ?
@@ -49,9 +45,12 @@ int main(int argc, char* argv[])
 				try {
 					out_data = assemble(input_data, start_id, opts.verbose);
 
-					// Assembly succeeded so we open the file
-					out_file.open(filename, (opts.binary_file ? std::ofstream::binary : std::ofstream::out) | std::ofstream::trunc);
-					out = &out_file;
+					if (!opts.no_file) // We only open a file if no-file is not set
+					{
+						// Assembly succeeded so we open the file
+						out_file.open(filename, (opts.binary_file ? std::ofstream::binary : std::ofstream::out) | std::ofstream::trunc);
+						out = &out_file;
+					}
 				}
 				catch (base_asm_error const& err) {
 					throw base_asm_error{ std::string{"in "} +filename + std::string{": "} + std::string{err.what()} }; // Stop program and forward error
