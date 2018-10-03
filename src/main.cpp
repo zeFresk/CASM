@@ -37,9 +37,7 @@ int main(int argc, char* argv[])
 				{
 					std::string base_filename = (i >= opts.out.size()) ? get_filename(opts.in[i]) : opts.out[i]; // user hasn't provided a name ?
 					filename = base_filename + (opts.binary_file ? ".cbin" : ".txt"); // is output a binary file ?
-
-					out_file.open(filename, (opts.binary_file ? std::ofstream::binary : std::ofstream::out) | std::ofstream::trunc);
-					out = &out_file;
+					// We will open file later (if assembly succeed)
 				}
 
 				// Extracting assembler from input file
@@ -50,6 +48,10 @@ int main(int argc, char* argv[])
 
 				try {
 					out_data = assemble(input_data, start_id, opts.verbose);
+
+					// Assembly succeeded so we open the file
+					out_file.open(filename, (opts.binary_file ? std::ofstream::binary : std::ofstream::out) | std::ofstream::trunc);
+					out = &out_file;
 				}
 				catch (base_asm_error const& err) {
 					throw base_asm_error{ std::string{"in "} +filename + std::string{": "} + std::string{err.what()} }; // Stop program and forward error

@@ -81,7 +81,7 @@ std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const
 			{
 				if (e.label != "") // this line has a label
 				{
-					if (/*std::find(std::begin(labels_map), std::end(labels_map), e.label)*/labels_map.find(e.label) != std::end(labels_map)) // label already defined
+					if (labels_map.find(e.label) != std::end(labels_map)) // label already defined
 						throw asm_logic_error{ e.corresponding_line, asm_data[e.corresponding_line], std::string{"error: label already defined ["} +e.label + std::string{"]"} };
 
 					labels_map[e.label] = current_id;
@@ -178,7 +178,10 @@ semi_assembled_line evaluate_line(line const& l, std::unordered_map<std::string,
 			ret.parameter = static_cast<integer>(left + right);
 		}
 	}
-	else { throw syntax_error{ l.corresponding_line, l.parameters }; }
+	else // parameter is an unknown label
+	{ 
+		throw asm_logic_error{ l.corresponding_line, l.parameters, "error: unknown label" }; 
+	}
 
 	return ret;
 }
@@ -205,7 +208,7 @@ integer evaluate_parameter(std::string const& p, std::unordered_map<std::string,
 {
 	integer ret = special_id;
 
-	if (/*std::find(std::begin(map), std::end(map), p)*/map.find(p) != std::end(map)) // parameters contains only a label which exists in BDD
+	if (map.find(p) != std::end(map)) // parameters contains only a label which exists in BDD
 	{
 		ret = map.at(p);
 	}
@@ -253,7 +256,7 @@ void check_label(line const&, std::string const&)
 void check_instruction(line const& l, std::string const& original_line)
 {
 	if (l.instruction != std::string{ "" }) {
-		if (/*std::find(std::begin((Instructions::get())), std::end((Instructions::get())), l.instruction)*/(Instructions::get()).find(l.instruction) == std::end((Instructions::get()))) // instruction not found
+		if ((Instructions::get()).find(l.instruction) == std::end((Instructions::get()))) // instruction not found
 			throw syntax_error{ l.corresponding_line, original_line, std::string{"error: unknown instruction ["} +l.instruction + std::string{"]"} };
 	}
 }

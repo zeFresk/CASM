@@ -12,7 +12,7 @@ namespace _impl {
 
 	std::regex double_regex{ double_digits_only };
 
-	std::regex triple_regex{ triple_digits_only};
+	//std::regex triple_regex{ triple_digits_only}; // not used
 
 	std::regex just_a_number{ just_a_number_str};
 

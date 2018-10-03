@@ -8,8 +8,8 @@
 
 namespace _impl {
 
-	// https://regex101.com/r/eeEgLy/6
-	constexpr auto separate_line_str = R"(^\s*(\w*?):?\s?([a-zA-Z]+?|\.\w+)\s+(\w+|\[.*?\])\s*(?:;\s*(.*)\s*|()\s*)$)";
+	// https://regex101.com/r/eeEgLy/7
+	constexpr auto separate_line_str = R"(^\s*(?:(?:(\w*?):)?\s*([a-zA-Z]+?|\.\w+)\s+(\w+|\[.*?\])\s*)?(?:;\s*(.*)\s*|()\s*)$)";
 	extern std::regex separate_line;
 
 	// https://regex101.com/r/RHHBET/1
@@ -27,16 +27,16 @@ namespace _impl {
 	#define sub_params parameters_regex
 	#define jaz_params parameters_regex
 	#define hrs_params parameters_regex
+	#define word_params parameters_regex
 
 	constexpr auto double_digits_only = R"(^(?:0?\d{2}\D*)$)";
 	extern std::regex double_regex;
 
 	#define at_params double_regex
 
-	constexpr auto triple_digits_only = R"(^(?:0?\d{3}\D*)$)";
-	extern std::regex triple_regex;
-
-	#define word_params triple_regex
+	// Not used for the moment
+	//constexpr auto triple_digits_only = R"(^(?:0?\d{3}\D*)$)"; 
+	//extern std::regex triple_regex;
 
 	constexpr auto just_a_number_str = R"(^\d+$)";
 	extern std::regex just_a_number;
