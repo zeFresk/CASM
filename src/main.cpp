@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
 					}
 				}
 				catch (base_asm_error const& err) {
-					throw base_asm_error{ std::string{"in "} +filename + std::string{": "} + std::string{err.what()} }; // Stop program and forward error
+					throw base_asm_error{ std::string{"in "} + opts.in[i] + std::string{": "} + std::string{err.what()} }; // Stop program and forward error
 				}
 
 				// Saving assembly
