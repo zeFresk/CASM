@@ -25,7 +25,7 @@ else()
 endif()
 
 #### add google-test
-add_subdirectory(../third_party/google-test)
+add_subdirectory(third_party/google-test)
 
 # enable CTest testing
 enable_testing()
@@ -33,10 +33,10 @@ enable_testing()
 #### CAssembler tests
 include_directories(../CAssembler/include)
 
-file(GLOB CASSEMBLER_SOURCES "../CAssembler/*.cpp")
+file(GLOB SOURCES "../CAssembler/src/*.cpp")
 
-add_library(CAssembler_lib ${CASSEMBLER_SOURCES})
+add_library(CAssembler_lib ${SOURCES})
 
-target_link_libraries(CAssembler_tests CAssembler_lib GTest::Gtest GTest::GMain)
+target_link_libraries(CAssembler_tests CAssembler_lib gtest gtest_main)
 
 add_test(CAssembler_all_test CAssembler_tests)

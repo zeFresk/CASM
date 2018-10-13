@@ -5,6 +5,6 @@ project(CASM)
 #subprojects
 add_subdirectory(CAssembler)
 
-add_subdirectory(CEmu)
+#add_subdirectory(CEmu)
 
 add_subdirectory(tests)

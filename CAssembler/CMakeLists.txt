@@ -32,7 +32,9 @@ else()
 endif()
 
 #Check for Boost
-set(Boost_USE_STATIC_LIBS	ON) #Quick fix
+if(MSVC)
+	set(Boost_USE_STATIC_LIBS	ON) #Quick fix
+endif()
 find_package(Boost REQUIRED COMPONENTS program_options)
 
 #Link and include Boost
