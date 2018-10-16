@@ -6,17 +6,30 @@ project(CAssembler)
 set(MAJOR_VERSION 1)
 set(MINOR_VERSION 0)
 
-#adding includes and sources
+#setting includes and sources
 set(INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include")
-include_directories("${INCLUDE_DIR}")
-
 set(SRC_DIR "${PROJECT_SOURCE_DIR}/src")
 file(GLOB SOURCES "${SRC_DIR}/*.cpp")
 
-add_executable(CAssembler  ${SOURCES})
+#creating library
+add_library(CAssembler_lib ${SOURCES})
+target_include_directories(CAssembler_lib PUBLIC ${INCLUDE_DIR})
+
+#creating main executable
+add_executable(CAssembler "main.cpp")
+target_include_directories(CAssembler PUBLIC ${INCLUDE_DIR})
+target_link_libraries(CAssembler CAssembler_lib)
+
+#adding tests if set
+option(BUILD_TESTS "Build tets and googletest" OFF) #off by default to not overload user
+if (BUILD_TESTS)
+	include(tests/tests.cmake)
+else()
+	message(AUTHOR_WARNING "Not compiling tests.")
+endif()
 
 #Setting C++ flags
-set_property(TARGET CAssembler PROPERTY CXX_STANDARD 14)
+set_property(TARGET CAssembler_lib CAssembler PROPERTY CXX_STANDARD 14)
 
 if(MSVC)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX- /Wall /wd4514 /wd4820 /O2")
@@ -39,12 +52,13 @@ find_package(Boost REQUIRED COMPONENTS program_options)
 
 #Link and include Boost
 if(Boost_FOUND)
-	message(STATUS "found BOOST: " ${BOOST_ROOT})
-	message(STATUS "boost include: " ${Boost_INCLUDE_DIRS})
 	target_include_directories(CAssembler SYSTEM PUBLIC ${Boost_INCLUDE_DIRS})
-	target_link_libraries(CAssembler ${Boost_LIBRARIES})
+	#target_link_libraries(CAssembler ${Boost_LIBRARIES})
+	target_include_directories(CAssembler_lib SYSTEM PUBLIC ${Boost_INCLUDE_DIRS})
+	target_link_libraries(CAssembler_lib ${Boost_LIBRARIES})
+
 else()
-	message(FATAL_ERROR "Error: Couldn't find Boost")
+	message(FATAL_ERROR "Error: Couldn't find Boost.")
 endif()
 
 #configuration header

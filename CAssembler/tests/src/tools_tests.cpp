@@ -10,8 +10,8 @@ TEST_F(ToolsTests, get_filename_works)
 	EXPECT_EQ(get_filename(simple_filename), "test") << "Can't resolve basic filename.";
 
 	const std::string complex_filename = "test.av.tct";
-	EXPECT_EQ(get_filename(complex_filename), "test") << "Can't resolve complex filename.";
+	EXPECT_EQ(get_filename(complex_filename), "test.av") << "Can't resolve complex filename.";
 
 	const std::string spaced_filename = "test spaced.tct";
-	EXPECT_EQ(get_filename(complex_filename), "test spaced") << "Can't resolve filename containg space.";
+	EXPECT_EQ(get_filename(spaced_filename), "test spaced") << "Can't resolve filename containg space.";
 }
