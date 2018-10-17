@@ -8,8 +8,8 @@
 
 namespace _impl {
 
-	// https://regex101.com/r/eeEgLy/7
-	constexpr auto separate_line_str = R"(^\s*(?:(?:(\w*?):)?\s*([a-zA-Z]+?|\.\w+)\s+(\w+|\[.*?\])\s*)?(?:;\s*(.*)\s*|()\s*)$)";
+	// https://regex101.com/r/eeEgLy/8
+	constexpr auto separate_line_str = R"(^\s*(?:(?:(\w*?)\s*:)?\s*([a-zA-Z]+?|\.\w+)\s+(\w+|\[.*?\])\s*)?(?:;\s*(.*)\s*|()\s*)$)";
 	extern std::regex separate_line;
 
 	// https://regex101.com/r/RHHBET/1

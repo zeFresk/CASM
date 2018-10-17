@@ -235,7 +235,7 @@ line parse_line(integer id, std::string const& str)
 		ret.label = match[1].str();
 		ret.instruction = match[2].str();
 		ret.parameters = match[3].str();
-		ret.comment = match[5].str();
+		ret.comment = match[4].str();
 	}
 	return ret;
 }
