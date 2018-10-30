@@ -1,0 +1,7 @@
+.at 10
+a: .word 001
+ptr_a: .word a
+
+.start 30
+sub a
+jaz ptr_a

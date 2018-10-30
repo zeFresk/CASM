@@ -1,0 +1,11 @@
+.start 30
+inp 01
+out 02
+lda 03
+ldi 04
+sta 05
+sti 06
+add 07
+sub 08
+jaz 09
+hrs 00

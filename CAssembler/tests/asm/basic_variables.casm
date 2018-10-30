@@ -1,0 +1,10 @@
+.at 10
+a: .word 004
+b: .word 005
+c: .word 006
+
+.start 30
+lda a
+ldi b
+add c
+hrs 00

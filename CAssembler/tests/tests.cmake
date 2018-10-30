@@ -12,6 +12,9 @@ target_include_directories(CAssembler_tests PUBLIC ${CASSEMBLER_DIR}/include)
 
 target_link_libraries(CAssembler_tests CAssembler_lib GTest::GTest GTest::Main)
 
+# We need to copy the test files
+add_custom_command(TARGET CAssembler_tests POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${TEST_DIR}/asm $<TARGET_FILE_DIR:CAssembler_tests>/asm)
+
 add_test(CAssembler_all CAssembler_tests)
 #### set up c++ flags
 set_property(TARGET CAssembler_tests PROPERTY CXX_STANDARD 14)

@@ -31,8 +31,7 @@ int main(int argc, char* argv[])
 
 				if (!opts.no_file) // We retrieve filename to write in a file if --no-file is not set
 				{
-					std::string base_filename = (i >= opts.out.size()) ? get_filename(opts.in[i]) : opts.out[i]; // user hasn't provided a name ?
-					filename = base_filename + (opts.binary_file ? ".cbin" : ".txt"); // is output a binary file ?
+					filename = (i >= opts.out.size()) ? get_filename(opts.in[i]) + (opts.binary_file ? ".cbin" : ".txt") : opts.out[i]; // user hasn't provided a name ?
 					// We will open file later (if assembly succeed)
 				}
 
