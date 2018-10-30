@@ -4,12 +4,13 @@
 #ifndef instruction_h
 #define instructions_h
 
-#include "regex.h"
+#include "regexs.h"
 #include "assembler.h"
 
 #include <unordered_map>
 #include <string>
 #include <limits>
+#include <regex>
 
 namespace _impl {
 

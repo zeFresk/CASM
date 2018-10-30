@@ -1,7 +1,7 @@
 #include "assembler.h"
 #include "tools.h"
 #include "asm_error.h"
-#include "regex.h"
+#include "regexs.h"
 #include "instructions.h"
 
 #include <algorithm>

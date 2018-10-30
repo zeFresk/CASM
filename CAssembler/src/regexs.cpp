@@ -2,7 +2,7 @@
 	definitions of regexes, should save compile time
 */
 
-#include "regex.h"
+#include "regexs.h"
 
 namespace _impl {
 
