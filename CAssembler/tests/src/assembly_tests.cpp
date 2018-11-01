@@ -47,13 +47,13 @@ std::vector<std::string> load_from_stream(std::istream& is)
 }\
 
 // Check if most basic example is correctly assembled (no complex instructions other than .start)
-ASSEMBLY_FMT_TEST_FILE(most_basic);
+ASSEMBLY_FMT_TEST_FILE(most_basic)
 
 // Check if all basic instructions work
-ASSEMBLY_FMT_TEST_FILE(all_basic_instructions);
+ASSEMBLY_FMT_TEST_FILE(all_basic_instructions)
 
 // Check if it works with variables
-ASSEMBLY_FMT_TEST_FILE(basic_variables);
+ASSEMBLY_FMT_TEST_FILE(basic_variables)
 
 // Check if ptr variables work
-ASSEMBLY_FMT_TEST_FILE(ptr_variables);
+ASSEMBLY_FMT_TEST_FILE(ptr_variables)

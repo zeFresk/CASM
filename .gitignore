@@ -31,6 +31,5 @@
 *.out
 *.app
 
-#VS files
-/.vs
-CM*.json
+# CMake auto generated files
+CMake_config.h

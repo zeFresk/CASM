@@ -14,55 +14,100 @@
 
 using namespace _impl;
 
-std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const& asm_data, integer& strt, bool verbose)
+
+//###################################################################
+//################## Assembly main functions#########################
+//###################################################################
+
+std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const& raw_asm, integer& strt, bool verbose)
 {
 	//Parsing a first time to separate labels, instructions, parameters and comments
 	v_log(verbose, "->Parsing\n");
-	std::vector<line> parsed_asm;
-	parsed_asm.reserve(asm_data.size());
 
+	// variable which will contains the total number of build errors
 	std::size_t errors = 0;
 
+	auto splitted_asm = split_and_parse(raw_asm, errors);
+	
+	//make instruction case-insensitive by setting them in uppercase
+	for (auto &e : splitted_asm)
+		std::transform(std::begin(e.instruction), std::end(e.instruction), std::begin(e.instruction), [](unsigned char c) {return std::toupper(c); });
+
+	v_log(verbose, "->Checking for advanced syntax error\n");
+	//check for more complicated errors and warnings
+	advanced_checks(splitted_asm, errors);
+	
+	v_log(verbose, "->Creating structure\n");
+	// first we associate each line to its address
+	auto ordered_map = associate_lines_to_addresses(splitted_asm, strt, errors);
+
+	v_log(verbose, "->Associating labels\n");
+	// then we associate each label to the line it represents
+	auto labels_map = associate_labels(ordered_map, errors);
+	
+	// evaluating parameters
+	v_log(verbose, "->Resolving and evaluating parameters\n");
+	auto parameters_resolved_map = resolve_parameters(ordered_map, labels_map, errors);
+	
+	// Stop here if at least one error occured
+	if (errors > 0)
+		throw assembly_failed{ errors };
+
+	// assembling
+	v_log(verbose, "->Assembling\n");
+	auto assembled_data = assemble_resolved_lines(parameters_resolved_map);
+	
+	return assembled_data;
+
+}
+
+//###################################################################
+//################### Assembly sub-functions ########################
+//###################################################################
+
+std::vector<splitted_raw_line> split_and_parse(std::vector<std::string> const& raw_lines, std::size_t& nb_errors)
+{
+	std::vector<splitted_raw_line> splitted_code;
+	splitted_code.reserve(raw_lines.size()); // to speed up push_back
 	integer i = 0;
-	for (auto &e : asm_data) // parsing everything once
+
+	for (auto &e : raw_lines) // parse every line of code
 	{
 		try {
-			parsed_asm.push_back(std::move(parse_line(i, e)));
+			splitted_code.push_back(parse_line(i, e));
 		}
 		catch (base_asm_error const& err)
 		{
-			++errors;
+			++nb_errors;
 			std::cout << "! in line " << err.what() << std::endl;
 		}
 		++i;
 	}
+	return splitted_code;
+}
 
-	//make instruction case-insensitive
-	for (auto &e : parsed_asm)
-		std::transform(std::begin(e.instruction), std::end(e.instruction), std::begin(e.instruction), [](unsigned char c) {return std::toupper(c); });
-
-	v_log(verbose, "->Checking for advanced syntax error\n");
-	//check for more complicated errors
-	for (auto &e : parsed_asm)
+void advanced_checks(std::vector<splitted_raw_line> const& splitted_asm, std::size_t& nb_errors)
+{
+	for (auto &e : splitted_asm)
 	{
 		try {
-			check_line(e, asm_data[e.corresponding_line]);
+			check_line(e, e.original_line);
 		}
 		catch (base_asm_error const& err) {
-			++errors;
+			++nb_errors;
 			std::cout << "! in line " << err.what() << std::endl;
 		}
 	}
+}
 
-	// ordering the lines
-	v_log(verbose, "->Creating structure\n");
-	std::unordered_map<std::string, integer> labels_map; // will contain each position associated with a label
-	std::map<integer, line> lines_map; // will contain every line at the correct place
-	integer start_id = special_id;
+std::map<integer, splitted_raw_line> associate_lines_to_addresses(std::vector<splitted_raw_line> const& splitted_asm, integer& strt, std::size_t& nb_errors)
+{
+	std::map<integer, splitted_raw_line> ordered_map; // associate each line to its future address
 
-	integer current_id = 20;
+	integer start_id = special_id; // magic value
+	integer current_id = 20; // default starting id will be twenty if not specified
 
-	for (auto &e : parsed_asm)
+	for (auto &e : splitted_asm)
 	{
 		try {
 			if (e.instruction == ".AT") // ordering instruction
@@ -72,81 +117,104 @@ std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const
 			else if (e.instruction == ".START") // start instruction
 			{
 				if (start_id != special_id) // start already set ???
-					throw asm_logic_error{ e.corresponding_line, asm_data[e.corresponding_line], "error: two \".start\" found" };
+					throw asm_logic_error{ e.original_line_number, e.original_line, "error: two \".start\" found" };
 
 				current_id = static_cast<integer>(std::stoul(e.parameters));
 				start_id = current_id;
 			}
 			else if (e.instruction != "")
 			{
-				if (e.label != "") // this line has a label
-				{
-					if (labels_map.find(e.label) != std::end(labels_map)) // label already defined
-						throw asm_logic_error{ e.corresponding_line, asm_data[e.corresponding_line], std::string{"error: label already defined ["} +e.label + std::string{"]"} };
-
-					labels_map[e.label] = current_id;
-				}
-				lines_map[current_id] = e; // copy the current line at the right place
+				ordered_map[current_id] = e; // copy the current line at the right place
 				++current_id;
 			}
 
 			if (current_id >= 100) //overflow
-				throw asm_overflow{ e.corresponding_line, asm_data[e.corresponding_line], std::string{ "error: overflow id=" } +std::to_string(current_id) };
+				throw asm_overflow{ e.original_line_number, e.original_line, std::string{ "error: overflow id=" } +std::to_string(current_id) };
 		}
 		catch (base_asm_error const& err) {
-			++errors;
+			++nb_errors;
 			std::cout << "! in line " << err.what() << std::endl;
 		}
 	}
-	
-	// Checking for a .start
+
+	// Checking if one .start has been defined
 	try {
 		if (start_id == special_id) // no start defined
 			throw asm_logic_error{ 0, "", "error: no .start found" };
 		strt = start_id;
 	}
 	catch (base_asm_error const& err) {
-		++errors;
+		++nb_errors;
 		std::cout << "! in line " << err.what() << std::endl;
 	}
 
-	// evaluating parameters
-	v_log(verbose, "->Resolving labels and evaluating parameters\n");
-	std::map<integer, semi_assembled_line> semi_assembled_map;
+	return ordered_map;
+}
 
-	for (auto &e : lines_map)
+std::unordered_map<std::string, integer> associate_labels(std::map<integer, splitted_raw_line> const& splitted_asm, std::size_t& nb_errors)
+{
+	std::unordered_map<std::string, integer> labels_map;
+	integer id;
+	splitted_raw_line line;
+
+	for (auto &pair : splitted_asm)
+	{
+		std::tie(id, line) = pair;
+		try {
+			
+			if (line.label != "") // this line has a label
+			{
+				if (labels_map.find(line.label) != std::end(labels_map)) // label already defined
+					throw asm_logic_error{ line.original_line_number, line.original_line, std::string{"error: label already defined ["} + line.label + std::string{"]"} };
+
+				labels_map[line.label] = id;
+			}
+		}
+		catch (base_asm_error const& err) {
+				++nb_errors;
+				std::cout << "! in line " << err.what() << std::endl;
+			}
+	}
+	return labels_map;
+}
+
+
+std::map<integer, half_resolved_line> resolve_parameters(std::map<integer, splitted_raw_line> const& ordered_lines_map, std::unordered_map<std::string, integer> const& labels_map, std::size_t& nb_errors)
+{
+	std::map<integer, half_resolved_line> semi_assembled_map;
+
+	for (auto &e : ordered_lines_map)
 	{
 		try {
 			semi_assembled_map[e.first] = evaluate_line(e.second, labels_map);
 		}
 		catch (base_asm_error const& err) {
-			++errors;
+			++nb_errors;
 			std::cout << "! in line " << err.what() << std::endl;
 		}
 	}
+	return semi_assembled_map;
+}
 
-	// Stop here if at least one error occured
-	if (errors > 0)
-		throw assembly_failed{ errors };
-
-	// assembling
-	v_log(verbose, "->Assembling\n");
-	std::vector<std::pair<integer, integer>> ret{ semi_assembled_map.size() };
+std::vector<std::pair<integer,integer>> assemble_resolved_lines(std::map<integer, half_resolved_line> const& parameters_resolved_map)
+{
+	std::vector<std::pair<integer, integer>> ret{ parameters_resolved_map.size() };
 
 	std::size_t j = 0;
-	for (auto &e : semi_assembled_map)
+	for (auto &e : parameters_resolved_map)
 	{
 		ret[j] = { e.first, (Instructions::get().at(e.second.instruction)).id * 100 + e.second.parameter };
 		++j;
 	}
-
 	return ret;
-
 }
 
-semi_assembled_line evaluate_line(line const& l, std::unordered_map<std::string, integer> const& labels_map)
+//###################################################################
+//################# Line specialized functions ######################
+//###################################################################
+half_resolved_line evaluate_line(splitted_raw_line const& l, std::unordered_map<std::string, integer> const& labels_map)
 {
-	semi_assembled_line ret;
+	half_resolved_line ret;
 	ret.instruction = l.instruction;
 
 	if (std::regex_match(l.parameters, just_a_number)) // parameters contains just a number
@@ -180,13 +248,13 @@ semi_assembled_line evaluate_line(line const& l, std::unordered_map<std::string,
 	}
 	else // parameter is an unknown label
 	{ 
-		throw asm_logic_error{ l.corresponding_line, l.parameters, "error: unknown label" }; 
+		throw asm_logic_error{ l.original_line_number, l.parameters, "error: unknown label" }; 
 	}
 
 	return ret;
 }
 
-integer convert_operand(std::string const& op, std::unordered_map<std::string, integer> const& labels_map, line const& l)
+integer convert_operand(std::string const& op, std::unordered_map<std::string, integer> const& labels_map, splitted_raw_line const& l)
 {
 	integer ret;
 
@@ -198,7 +266,7 @@ integer convert_operand(std::string const& op, std::unordered_map<std::string, i
 	{
 		ret = evaluate_parameter(op, labels_map);
 		if (ret == special_id) // lhs isn't a number or a known label
-			asm_logic_error{ l.corresponding_line, l.parameters, std::string{ "error: Unknown label [" } + op + std::string{ "]" } };
+			asm_logic_error{ l.original_line_number, l.parameters, std::string{ "error: Unknown label [" } + op + std::string{ "]" } };
 	}
 
 	return ret;
@@ -216,11 +284,11 @@ integer evaluate_parameter(std::string const& p, std::unordered_map<std::string,
 	return ret;
 }
 
-line parse_line(integer id, std::string const& str)
+splitted_raw_line parse_line(integer id, std::string const& str)
 {
-	line ret{ id, "", "", "", "" };
-	if (str == "") // empty
-		return { id, "", "", "", "" };
+	splitted_raw_line ret{ id, str, "", "", "", "" };
+	if (str == std::string{""}) // empty
+		return { id, str, "", "", "", "" };
 
 	std::smatch match;
 	if (!std::regex_match(str, match, separate_line)) // Error : the line isn't empty and it doesn't match normal syntax
@@ -231,7 +299,8 @@ line parse_line(integer id, std::string const& str)
 	{
 		//storing matches
 		assert(match.size() == 6);
-		ret.corresponding_line = id;
+		ret.original_line_number = id;
+		ret.original_line = str;
 		ret.label = match[1].str();
 		ret.instruction = match[2].str();
 		ret.parameters = match[3].str();
@@ -240,7 +309,12 @@ line parse_line(integer id, std::string const& str)
 	return ret;
 }
 
-void check_line(line const& l, std::string const& str)
+
+//###################################################################
+//############### Specialized Checking functions ####################
+//###################################################################
+
+void check_line(splitted_raw_line const& l, std::string const& str)
 {
 	check_label(l, str);
 	check_instruction(l, str);
@@ -248,28 +322,28 @@ void check_line(line const& l, std::string const& str)
 	check_comment(l, str);
 }
 
-void check_label(line const&, std::string const&)
+void check_label(splitted_raw_line const&, std::string const&)
 {
 	// nothing to check in labels for the moment
 }
 
-void check_instruction(line const& l, std::string const& original_line)
+void check_instruction(splitted_raw_line const& l, std::string const& original_line)
 {
 	if (l.instruction != std::string{ "" }) {
 		if ((Instructions::get()).find(l.instruction) == std::end((Instructions::get()))) // instruction not found
-			throw syntax_error{ l.corresponding_line, original_line, std::string{"error: unknown instruction ["} +l.instruction + std::string{"]"} };
+			throw syntax_error{ l.original_line_number, original_line, std::string{"error: unknown instruction ["} +l.instruction + std::string{"]"} };
 	}
 }
 
-void check_parameters(line const& l, std::string const& original_line)
+void check_parameters(splitted_raw_line const& l, std::string const& original_line)
 {
 	if (l.parameters != std::string{ "" }) {
 		if (!std::regex_match(l.parameters, static_cast<std::regex&>((Instructions::get()).at(l.instruction).reg_params))) // parameters is incorrect
-			throw syntax_error{ l.corresponding_line, original_line, std::string{"error: parameters are incorrect ["} +l.parameters + std::string{"]"} };
+			throw syntax_error{ l.original_line_number, original_line, std::string{"error: parameters are incorrect ["} +l.parameters + std::string{"]"} };
 	}
 }
 
-void check_comment(line const&, std::string const&)
+void check_comment(splitted_raw_line const&, std::string const&)
 {
 	//nothing to check for the moment
 }
