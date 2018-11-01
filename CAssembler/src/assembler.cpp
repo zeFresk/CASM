@@ -44,6 +44,8 @@ std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const
 	v_log(verbose, "->Associating labels\n");
 	// then we associate each label to the line it represents
 	auto labels_map = associate_labels(ordered_map, errors);
+	// delete lines with no instructions i.e label-only lines
+	ordered_map.erase(std::remove_if(std::begin(ordered_map), std::end(ordered_map), [](std::pair<integer, splitted_raw_line> const& p){return p.second.instruction == "";}), std::end(ordered_map));
 	
 	// evaluating parameters
 	v_log(verbose, "->Resolving and evaluating parameters\n");
@@ -100,9 +102,9 @@ void advanced_checks(std::vector<splitted_raw_line> const& splitted_asm, std::si
 	}
 }
 
-std::map<integer, splitted_raw_line> associate_lines_to_addresses(std::vector<splitted_raw_line> const& splitted_asm, integer& strt, std::size_t& nb_errors)
+std::vector<std::pair<integer, splitted_raw_line>> associate_lines_to_addresses(std::vector<splitted_raw_line> const& splitted_asm, integer& strt, std::size_t& nb_errors)
 {
-	std::map<integer, splitted_raw_line> ordered_map; // associate each line to its future address
+	std::vector<std::pair<integer, splitted_raw_line>> ordered_map; // associate each line to its future address
 
 	integer start_id = special_id; // magic value
 	integer current_id = 20; // default starting id will be twenty if not specified
@@ -122,10 +124,11 @@ std::map<integer, splitted_raw_line> associate_lines_to_addresses(std::vector<sp
 				current_id = static_cast<integer>(std::stoul(e.parameters));
 				start_id = current_id;
 			}
-			else if (e.instruction != "")
+			else if (e.instruction != "" || e.label != "")
 			{
-				ordered_map[current_id] = e; // copy the current line at the right place
-				++current_id;
+				ordered_map.push_back({current_id, e}); // copy the current line at the right place
+				if (e.instruction != "") // We don't want to increase id if the line contained only a label 
+					++current_id;
 			}
 
 			if (current_id >= 100) //overflow
@@ -151,7 +154,7 @@ std::map<integer, splitted_raw_line> associate_lines_to_addresses(std::vector<sp
 	return ordered_map;
 }
 
-std::unordered_map<std::string, integer> associate_labels(std::map<integer, splitted_raw_line> const& splitted_asm, std::size_t& nb_errors)
+std::unordered_map<std::string, integer> associate_labels(std::vector<std::pair<integer, splitted_raw_line>> const& splitted_asm, std::size_t& nb_errors)
 {
 	std::unordered_map<std::string, integer> labels_map;
 	integer id;
@@ -159,13 +162,14 @@ std::unordered_map<std::string, integer> associate_labels(std::map<integer, spli
 
 	for (auto &pair : splitted_asm)
 	{
-		std::tie(id, line) = pair;
 		try {
-			
+			std::tie(id, line) = pair;
+
 			if (line.label != "") // this line has a label
 			{
 				if (labels_map.find(line.label) != std::end(labels_map)) // label already defined
 					throw asm_logic_error{ line.original_line_number, line.original_line, std::string{"error: label already defined ["} + line.label + std::string{"]"} };
+				
 
 				labels_map[line.label] = id;
 			}
@@ -179,7 +183,7 @@ std::unordered_map<std::string, integer> associate_labels(std::map<integer, spli
 }
 
 
-std::map<integer, half_resolved_line> resolve_parameters(std::map<integer, splitted_raw_line> const& ordered_lines_map, std::unordered_map<std::string, integer> const& labels_map, std::size_t& nb_errors)
+std::map<integer, half_resolved_line> resolve_parameters(std::vector<std::pair<integer, splitted_raw_line>> const& ordered_lines_map, std::unordered_map<std::string, integer> const& labels_map, std::size_t& nb_errors)
 {
 	std::map<integer, half_resolved_line> semi_assembled_map;
 

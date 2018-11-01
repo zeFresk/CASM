@@ -57,3 +57,6 @@ ASSEMBLY_FMT_TEST_FILE(basic_variables)
 
 // Check if ptr variables work
 ASSEMBLY_FMT_TEST_FILE(ptr_variables)
+
+// Check if label without instructions but pointing on line below works
+ASSEMBLY_FMT_TEST_FILE(no_instructions_labels)

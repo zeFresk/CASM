@@ -1,0 +1,29 @@
+.at 20
+a: .word 042
+ct0: .word 000
+ret: .word 000
+ret_ptr: .word ret
+
+.at 30 ; function
+add: ; function which takes one argument
+lda ct0
+jaz add_start
+return_adr: .word 000
+parameter: .word 000
+return_ptr: .word 000
+add_start:
+lda parameter
+add a
+add_ret:
+sti return_ptr
+lda ct0
+jaz return_adr
+
+.start 60
+lda ret_here
+sta [ add + 2 ]
+lda a
+sta [ add + 3 ]
+lda ret_ptr
+sta [ add + 4 ]
+ret_here: hrs 00

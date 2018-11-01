@@ -54,13 +54,13 @@ std::vector<splitted_raw_line> split_and_parse(std::vector<std::string> const& r
 // Associate each line of code to its final address in the future binary
 // nb_errors value will increase by number of errors which happened during this stage
 // strt will be replaced with entry point of the future program
-std::map<integer, splitted_raw_line> associate_lines_to_addresses(std::vector<splitted_raw_line> const& splitted_asm, integer& strt, std::size_t& nb_errors);
+std::vector<std::pair<integer, splitted_raw_line>> associate_lines_to_addresses(std::vector<splitted_raw_line> const& splitted_asm, integer& strt, std::size_t& nb_errors);
 
 // Associate each label to its corresponding line number in a map
-std::unordered_map<std::string, integer> associate_labels(std::map<integer, splitted_raw_line> const& splitted_asm, std::size_t& nb_errors);
+std::unordered_map<std::string, integer> associate_labels(std::vector<std::pair<integer, splitted_raw_line>> const& splitted_asm, std::size_t& nb_errors);
 
 // Resolve every parameter whereas it is an expression, a label or a number and returns a map of asl lines containing only instructions and resolved parameter
-std::map<integer, half_resolved_line> resolve_parameters(std::map<integer, splitted_raw_line> const& ordered_lines_map, std::unordered_map<std::string, integer> const& labels_map, std::size_t& nb_errors);
+std::map<integer, half_resolved_line> resolve_parameters(std::vector<std::pair<integer, splitted_raw_line>> const& ordered_lines_map, std::unordered_map<std::string, integer> const& labels_map, std::size_t& nb_errors);
 
 // Fully assemble every line to its final asm form. The line must not require any interpretation anymore.
 std::vector<std::pair<integer,integer>> assemble_resolved_lines(std::map<integer, half_resolved_line> const& parameters_resolved_map);
