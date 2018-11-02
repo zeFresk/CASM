@@ -207,7 +207,7 @@ std::vector<std::pair<integer,integer>> assemble_resolved_lines(std::map<integer
 	std::size_t j = 0;
 	for (auto &e : parameters_resolved_map)
 	{
-		ret[j] = { e.first, (_impl::Instructions::get().at(e.second.instruction)).id * 100 + e.second.parameter };
+		ret[j] = { e.first, instruction_opcode(e.second.instruction) * 100 + e.second.parameter };
 		++j;
 	}
 	return ret;
@@ -334,15 +334,15 @@ void check_label(splitted_raw_line const&, std::string const&)
 void check_instruction(splitted_raw_line const& l, std::string const& original_line)
 {
 	if (l.instruction != std::string{ "" }) {
-		if ((_impl::Instructions::get()).find(l.instruction) == std::end((_impl::Instructions::get()))) // instruction not found
+		if (! is_valid_instruction(l.instruction))
 			throw syntax_error{ l.original_line_number, original_line, std::string{"error: unknown instruction ["} +l.instruction + std::string{"]"} };
 	}
 }
 
 void check_parameters(splitted_raw_line const& l, std::string const& original_line)
 {
-	if (l.parameters != std::string{ "" }) {
-		if (!std::regex_match(l.parameters, static_cast<std::regex&>((_impl::Instructions::get()).at(l.instruction).reg_params))) // parameters is incorrect
+	if (l.parameters != std::string{ "" } && is_valid_instruction(l.instruction)) {
+		if (! is_valid_instruction_parameter(l.instruction, l.parameters))// parameters is incorrect
 			throw syntax_error{ l.original_line_number, original_line, std::string{"error: parameters are incorrect ["} +l.parameters + std::string{"]"} };
 	}
 }

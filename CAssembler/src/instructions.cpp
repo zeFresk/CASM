@@ -1,5 +1,29 @@
 #include "instructions.h"
 
+#include <cassert>
+
+opcode instruction_opcode(std::string const& instruction_name)
+{
+	assert(is_valid_instruction(instruction_name) && "Invalid instruction : can't retrieve opcode");
+	
+	return _impl::Instructions::get()[instruction_name].id;
+}
+
+
+bool is_valid_instruction_parameter(std::string const& instruction_name, std::string const& parameter)
+{
+	assert(is_valid_instruction(instruction_name) && "Invalid instruction : can't check parameters");
+	
+	auto checker = _impl::Instructions::get()[instruction_name].reg_params;
+	return std::regex_match(parameter, checker);
+}
+
+
+bool is_valid_instruction(std::string const& instruction_name)
+{
+	return _impl::Instructions::get().find(instruction_name) != _impl::Instructions::get().end();
+}
+
 namespace _impl {
 
 	Instructions::Instructions()
@@ -19,9 +43,9 @@ namespace _impl {
 		instructions_["SUB"] = { 7, sub_params };
 		instructions_["JAZ"] = { 8, jaz_params };
 		instructions_["HRS"] = { 9, hrs_params };
-		instructions_[".AT"] = { special_id, at_params };
+		instructions_[".AT"] = { special_op, at_params };
 		instructions_[".WORD"] = { 0, word_params };
-		instructions_[".START"] = { special_id, at_params };
+		instructions_[".START"] = { special_op, at_params };
 	}
 
 	Instructions::mapped_type& Instructions::operator[](Instructions::key_type const& key) { return instructions_[key]; }

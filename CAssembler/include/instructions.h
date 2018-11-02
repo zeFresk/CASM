@@ -11,18 +11,37 @@
 #include <string>
 #include <limits>
 #include <regex>
+#include <cstdint>
 
+using opcode = std::uint8_t;
+
+// Functions we will use
+
+// retrieve opcode given instruction name
+// instruction must be correct !
+opcode instruction_opcode(std::string const& instruction_name);
+
+// tells if parameter is compatible with given instruction
+bool is_valid_instruction_parameter(std::string const& instruction_name, std::string const& parameter);
+
+// tells if instruction is a valid one
+bool is_valid_instruction(std::string const& instruction_name);
+
+
+// We will not have to go here !
 namespace _impl {
 
+	constexpr opcode special_op = std::numeric_limits<opcode>::max();
 	constexpr integer special_id = std::numeric_limits<integer>::max();
 
 	struct parameter_data {
-		integer id;
+		opcode id;
 		std::regex reg_params;
 	};
 
 	using map_type = std::unordered_map<std::string, parameter_data>;
 
+	// Singleton which map every instruction to its id and correct parameters
 	class Instructions
 	{
 	public:
