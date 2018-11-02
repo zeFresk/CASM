@@ -3,6 +3,7 @@
 #include "asm_error.h"
 #include "regexs.h"
 #include "instructions.h"
+#include "parsing.h"
 
 #include <algorithm>
 #include <cctype> // toupper
@@ -12,7 +13,6 @@
 #include <map>
 #include <unordered_map>
 
-using namespace _impl;
 
 
 //###################################################################
@@ -106,7 +106,7 @@ std::vector<std::pair<integer, splitted_raw_line>> associate_lines_to_addresses(
 {
 	std::vector<std::pair<integer, splitted_raw_line>> ordered_map; // associate each line to its future address
 
-	integer start_id = special_id; // magic value
+	integer start_id = _impl::special_id; // magic value
 	integer current_id = 20; // default starting id will be twenty if not specified
 
 	for (auto &e : splitted_asm)
@@ -118,7 +118,7 @@ std::vector<std::pair<integer, splitted_raw_line>> associate_lines_to_addresses(
 			}
 			else if (e.instruction == ".START") // start instruction
 			{
-				if (start_id != special_id) // start already set ???
+				if (start_id != _impl::special_id) // start already set ???
 					throw asm_logic_error{ e.original_line_number, e.original_line, "error: two \".start\" found" };
 
 				current_id = static_cast<integer>(std::stoul(e.parameters));
@@ -142,7 +142,7 @@ std::vector<std::pair<integer, splitted_raw_line>> associate_lines_to_addresses(
 
 	// Checking if one .start has been defined
 	try {
-		if (start_id == special_id) // no start defined
+		if (start_id == _impl::special_id) // no start defined
 			throw asm_logic_error{ 0, "", "error: no .start found" };
 		strt = start_id;
 	}
@@ -207,7 +207,7 @@ std::vector<std::pair<integer,integer>> assemble_resolved_lines(std::map<integer
 	std::size_t j = 0;
 	for (auto &e : parameters_resolved_map)
 	{
-		ret[j] = { e.first, (Instructions::get().at(e.second.instruction)).id * 100 + e.second.parameter };
+		ret[j] = { e.first, (_impl::Instructions::get().at(e.second.instruction)).id * 100 + e.second.parameter };
 		++j;
 	}
 	return ret;
@@ -221,34 +221,18 @@ half_resolved_line evaluate_line(splitted_raw_line const& l, std::unordered_map<
 	half_resolved_line ret;
 	ret.instruction = l.instruction;
 
-	if (std::regex_match(l.parameters, just_a_number)) // parameters contains just a number
+	if (is_strictly_numeric(l.parameters)) // parameters contains just a number
 	{
 		ret.parameter = static_cast<integer>(std::stoul(l.parameters));
 	}
-	else if (evaluate_parameter(l.parameters, labels_map) != special_id) // parameters contains only a label which exists in BDD
+	else if (resolve_parameter(l.parameters, labels_map) != _impl::special_id) // parameters contains only a label which exists in BDD
 	{
-		ret.parameter = evaluate_parameter(l.parameters, labels_map);
+		ret.parameter = resolve_parameter(l.parameters, labels_map);
 	}
-	else if (std::regex_match(l.parameters, is_expression)) // parameters is an expression
+	else if (is_expression(l.parameters)) // parameters is an expression
 	{
-		std::smatch match;
-		std::regex_match(l.parameters, match, evaluate_regex); // 1 = lhs, 2 = op, 3 = rhs
-		
-		std::string lhs = match[1].str();
-		std::string rhs = match[3].str();
-		std::string op = match[2].str();
-
-		integer left = convert_operand(lhs, labels_map, l);
-		integer right = convert_operand(rhs, labels_map, l);
-
-		if (op == std::string{ "-" }) // sub
-		{
-			ret.parameter = static_cast<integer>(left - right);
-		}
-		else // add
-		{
-			ret.parameter = static_cast<integer>(left + right);
-		}
+		auto splitted_expression = split_expression(l.parameters);
+		ret.parameter = compute_expression(splitted_expression, labels_map, l);	
 	}
 	else // parameter is an unknown label
 	{ 
@@ -258,27 +242,43 @@ half_resolved_line evaluate_line(splitted_raw_line const& l, std::unordered_map<
 	return ret;
 }
 
-integer convert_operand(std::string const& op, std::unordered_map<std::string, integer> const& labels_map, splitted_raw_line const& l)
+integer compute_expression(expression const& exp, std::unordered_map<std::string, integer> const& labels_map, splitted_raw_line const& l)
+{
+	integer lhs = resolve_operand(exp.lhs, labels_map, l);
+	integer rhs = resolve_operand(exp.rhs, labels_map, l);
+
+	if (exp.operand == std::string{ "-" }) // sub
+	{
+		return static_cast<integer>(lhs - rhs);
+	}
+	else // add
+	{
+		return static_cast<integer>(lhs + rhs);
+	}
+}
+
+
+integer resolve_operand(std::string const& op, std::unordered_map<std::string, integer> const& labels_map, splitted_raw_line const& l)
 {
 	integer ret;
 
-	if (std::regex_match(op, just_a_number)) // lhs is just a number
+	if (is_strictly_numeric(op)) // lhs is just a number
 	{
 		ret = static_cast<integer>(std::stoul(op));
 	}
 	else // lhs must be a label
 	{
-		ret = evaluate_parameter(op, labels_map);
-		if (ret == special_id) // lhs isn't a number or a known label
+		ret = resolve_parameter(op, labels_map);
+		if (ret == _impl::special_id) // lhs isn't a number or a known label
 			asm_logic_error{ l.original_line_number, l.parameters, std::string{ "error: Unknown label [" } + op + std::string{ "]" } };
 	}
 
 	return ret;
 }
 
-integer evaluate_parameter(std::string const& p, std::unordered_map<std::string, integer> const& map)
+integer resolve_parameter(std::string const& p, std::unordered_map<std::string, integer> const& map)
 {
-	integer ret = special_id;
+	integer ret = _impl::special_id;
 
 	if (map.find(p) != std::end(map)) // parameters contains only a label which exists in BDD
 	{
@@ -295,20 +295,20 @@ splitted_raw_line parse_line(integer id, std::string const& str)
 		return { id, str, "", "", "", "" };
 
 	std::smatch match;
-	if (!std::regex_match(str, match, separate_line)) // Error : the line isn't empty and it doesn't match normal syntax
+	if (!is_valid_line(str)) // Error : the line isn't empty and it doesn't match normal syntax
 	{
 		throw syntax_error{ id,str };
 	}
 	else // no basic syntax error
 	{
-		//storing matches
-		assert(match.size() == 6);
+		auto splitted = split_line(str);
+
 		ret.original_line_number = id;
 		ret.original_line = str;
-		ret.label = match[1].str();
-		ret.instruction = match[2].str();
-		ret.parameters = match[3].str();
-		ret.comment = match[4].str();
+		ret.label = splitted.label;
+		ret.instruction = splitted.instruction;
+		ret.parameters = splitted.parameters;
+		ret.comment = splitted.comment;
 	}
 	return ret;
 }
@@ -334,7 +334,7 @@ void check_label(splitted_raw_line const&, std::string const&)
 void check_instruction(splitted_raw_line const& l, std::string const& original_line)
 {
 	if (l.instruction != std::string{ "" }) {
-		if ((Instructions::get()).find(l.instruction) == std::end((Instructions::get()))) // instruction not found
+		if ((_impl::Instructions::get()).find(l.instruction) == std::end((_impl::Instructions::get()))) // instruction not found
 			throw syntax_error{ l.original_line_number, original_line, std::string{"error: unknown instruction ["} +l.instruction + std::string{"]"} };
 	}
 }
@@ -342,7 +342,7 @@ void check_instruction(splitted_raw_line const& l, std::string const& original_l
 void check_parameters(splitted_raw_line const& l, std::string const& original_line)
 {
 	if (l.parameters != std::string{ "" }) {
-		if (!std::regex_match(l.parameters, static_cast<std::regex&>((Instructions::get()).at(l.instruction).reg_params))) // parameters is incorrect
+		if (!std::regex_match(l.parameters, static_cast<std::regex&>((_impl::Instructions::get()).at(l.instruction).reg_params))) // parameters is incorrect
 			throw syntax_error{ l.original_line_number, original_line, std::string{"error: parameters are incorrect ["} +l.parameters + std::string{"]"} };
 	}
 }

@@ -14,8 +14,6 @@ namespace _impl {
 
 	//std::regex triple_regex{ triple_digits_only}; // not used
 
-	std::regex just_a_number{ just_a_number_str};
-
 	std::regex is_expression{ is_expression_str };
 
 	std::regex evaluate_regex{ evaluate_regex_str };

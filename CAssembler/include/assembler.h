@@ -14,6 +14,9 @@
 
 using integer = std::uint16_t;
 
+// forward declarations
+struct expression;
+
 // #########################
 // #### Data structures ####
 // #########################
@@ -78,8 +81,18 @@ splitted_raw_line parse_line(integer id, std::string const& str);
 half_resolved_line evaluate_line( splitted_raw_line const& l, std::unordered_map<std::string, integer> const& labels_map);
 
 //helper functions
-integer evaluate_parameter(std::string const& p, std::unordered_map<std::string, integer> const& map);
-integer convert_operand(std::string const& op, std::unordered_map<std::string, integer> const& labels_map,  splitted_raw_line const& l);
+
+// resolve a given parameter label
+// if the label doesn't exists returns a special value
+integer resolve_parameter(std::string const& p, std::unordered_map<std::string, integer> const& map);
+
+// resolve an operand as if it was a parameter, converts it if numeric or resolve it if label
+// if the operand is a label AND the label doesn't exists throw an exception
+integer resolve_operand(std::string const& op, std::unordered_map<std::string, integer> const& labels_map,  splitted_raw_line const& l);
+
+// compute a pre-splitted expression given all the labels known
+// will throw if the expression contains unknown labels
+integer compute_expression(expression const& exp, std::unordered_map<std::string, integer> const& labels_map, splitted_raw_line const& l);
 
 //###################################################################
 //############### Specialized Checking functions ####################

@@ -38,9 +38,6 @@ namespace _impl {
 	//constexpr auto triple_digits_only = R"(^(?:0?\d{3}\D*)$)"; 
 	//extern std::regex triple_regex;
 
-	constexpr auto just_a_number_str = R"(^\d+$)";
-	extern std::regex just_a_number;
-
 	constexpr auto is_expression_str = R"(^\[\s*\w*\s*[+-]\s*\w*\s*\]$)";
 	extern std::regex is_expression;
 
