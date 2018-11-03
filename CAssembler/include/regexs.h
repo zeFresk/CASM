@@ -13,7 +13,7 @@ namespace _impl {
 	extern std::regex separate_line;
 
 	// https://regex101.com/r/RHHBET/1
-	constexpr auto parameters_str = R"(^(:?\D\w*|0?\d{2}\D*|\[\s*\w*\s*[+-]\s*\w*\s*\])$)";
+	constexpr auto parameters_str = R"(^(:?\D\w*|0?\d+\D*|\[\s*\w*\s*[+-]\s*\w*\s*\])$)";
 	extern std::regex parameters_regex;
 
 	// For the moment all the parameters can be the same
@@ -29,10 +29,10 @@ namespace _impl {
 	#define hrs_params parameters_regex
 	#define word_params parameters_regex
 
-	constexpr auto double_digits_only = R"(^(?:0?\d{2}\D*)$)";
-	extern std::regex double_regex;
+	constexpr auto digits_only = R"(^(?:0?\d+\D*)$)";
+	extern std::regex digits_regex;
 
-	#define at_params double_regex
+	#define at_params digits_regex
 
 	// Not used for the moment
 	//constexpr auto triple_digits_only = R"(^(?:0?\d{3}\D*)$)"; 

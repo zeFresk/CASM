@@ -9,6 +9,7 @@
 #include "assembler.h"
 #include "serialize.h"
 #include "asm_error.h"
+#include "bounded_integer.h"
 
 #include <iostream>
 #include <fstream>
@@ -38,7 +39,7 @@ int main(int argc, char* argv[])
 				// Extracting assembler from input file
 				auto input_data = load_from_file(opts.in[i]);
 				v_log(opts.verbose, "Assembling ", opts.in[i], "\n");
-				integer start_id;
+				bint start_id{0, opts.address_digits, opts.check};
 				decltype(assemble(input_data, start_id, opts.verbose)) out_data;
 
 				try {

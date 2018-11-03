@@ -5,14 +5,14 @@
 #ifndef assembler_h
 #define assembler_h
 
+#include "bounded_integer.h"
+
 #include <cstdint>
 #include <vector>
 #include <utility>
 #include <string>
 #include <unordered_map>
 #include <map>
-
-using integer = std::uint16_t;
 
 // forward declarations
 struct expression;
@@ -37,8 +37,23 @@ struct splitted_raw_line {
 
 struct half_resolved_line {
 	std::string instruction;
-	integer parameter;
+	bint parameter;
 };
+
+
+// #########################
+// ######## Aliases ########
+// #########################
+
+using address = bint;
+using instruction = bint;
+using parameter = bint;
+
+using assembled_data = std::vector<std::pair<address, instruction>>;
+using splitted_lines = std::vector<splitted_raw_line>;
+using ordered_lines_map_t = std::vector<std::pair<address, splitted_raw_line>>;
+using labels_map_t = std::unordered_map<std::string, address>;
+using half_assembled_lines = std::map<address, half_resolved_line>;
 
 // #########################
 // ## Assembler functions ##
@@ -48,51 +63,51 @@ struct half_resolved_line {
 // Return an array of <address, data>
 // start_id will be overwrite to the value representing the starting point of the executable
 // An exception will be thrown, if at least one error occurs during assembly
-std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const& asm_data, integer& start_id, bool verbose = false);
+assembled_data assemble(std::vector<std::string> const& asm_data, address& start_id, bool verbose = false);
 
 // Split all lines of code and check for errors
 // nb_errors value will increase by number of errors which happened during this stage
-std::vector<splitted_raw_line> split_and_parse(std::vector<std::string> const& raw_lines, std::size_t& nb_errors);
+splitted_lines split_and_parse(std::vector<std::string> const& raw_lines, std::size_t& nb_errors);
 
 // Associate each line of code to its final address in the future binary
 // nb_errors value will increase by number of errors which happened during this stage
 // strt will be replaced with entry point of the future program
-std::vector<std::pair<integer, splitted_raw_line>> associate_lines_to_addresses(std::vector<splitted_raw_line> const& splitted_asm, integer& strt, std::size_t& nb_errors);
+ordered_lines_map_t associate_lines_to_addresses(std::vector<splitted_raw_line> const& splitted_asm, address& strt, std::size_t& nb_errors);
 
 // Associate each label to its corresponding line number in a map
-std::unordered_map<std::string, integer> associate_labels(std::vector<std::pair<integer, splitted_raw_line>> const& splitted_asm, std::size_t& nb_errors);
+labels_map_t associate_labels(ordered_lines_map_t const& splitted_asm, std::size_t& nb_errors);
 
 // Resolve every parameter whereas it is an expression, a label or a number and returns a map of asl lines containing only instructions and resolved parameter
-std::map<integer, half_resolved_line> resolve_parameters(std::vector<std::pair<integer, splitted_raw_line>> const& ordered_lines_map, std::unordered_map<std::string, integer> const& labels_map, std::size_t& nb_errors);
+half_assembled_lines resolve_parameters(ordered_lines_map_t const& ordered_lines_map, labels_map_t const& labels_map, std::size_t& nb_errors);
 
 // Fully assemble every line to its final asm form. The line must not require any interpretation anymore.
-std::vector<std::pair<integer,integer>> assemble_resolved_lines(std::map<integer, half_resolved_line> const& parameters_resolved_map);
+assembled_data assemble_resolved_lines(half_assembled_lines const& parameters_resolved_map);
 
 // Check for more complicated syntax errors and warnings
 // nb_errors value will increase by number of errors which happened during this stage
-void advanced_checks(std::vector<splitted_raw_line> const& splitted_asm, std::size_t& nb_errors);
+void advanced_checks(splitted_lines const& splitted_asm, std::size_t& nb_errors);
 
 // Extract data from raw string
 // Will throw if syntax error
-splitted_raw_line parse_line(integer id, std::string const& str);
+splitted_raw_line parse_line(std::size_t id, std::string const& str);
 
 // Evaluate mathematical expressions in parameters
 // and replace label with their value
-half_resolved_line evaluate_line( splitted_raw_line const& l, std::unordered_map<std::string, integer> const& labels_map);
+half_resolved_line evaluate_line(splitted_raw_line const& l, labels_map_t const& labels_map);
 
 //helper functions
 
 // resolve a given parameter label
 // if the label doesn't exists returns a special value
-integer resolve_parameter(std::string const& p, std::unordered_map<std::string, integer> const& map);
+parameter resolve_parameter(std::string const& p, labels_map_t const& map);
 
 // resolve an operand as if it was a parameter, converts it if numeric or resolve it if label
 // if the operand is a label AND the label doesn't exists throw an exception
-integer resolve_operand(std::string const& op, std::unordered_map<std::string, integer> const& labels_map,  splitted_raw_line const& l);
+bint resolve_operand(std::string const& op,labels_map_t const& labels_map,  splitted_raw_line const& l);
 
 // compute a pre-splitted expression given all the labels known
 // will throw if the expression contains unknown labels
-integer compute_expression(expression const& exp, std::unordered_map<std::string, integer> const& labels_map, splitted_raw_line const& l);
+bint compute_expression(expression const& exp, labels_map_t const& labels_map, splitted_raw_line const& l);
 
 //###################################################################
 //############### Specialized Checking functions ####################

@@ -4,6 +4,7 @@
 #include "regexs.h"
 #include "instructions.h"
 #include "parsing.h"
+#include "bounded_integer.h"
 
 #include <algorithm>
 #include <cctype> // toupper
@@ -19,7 +20,7 @@
 //################## Assembly main functions#########################
 //###################################################################
 
-std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const& raw_asm, integer& strt, bool verbose)
+assembled_data ssemble(std::vector<std::string> const& raw_asm, address& strt, bool verbose)
 {
 	//Parsing a first time to separate labels, instructions, parameters and comments
 	v_log(verbose, "->Parsing\n");
@@ -45,7 +46,7 @@ std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const
 	// then we associate each label to the line it represents
 	auto labels_map = associate_labels(ordered_map, errors);
 	// delete lines with no instructions i.e label-only lines
-	ordered_map.erase(std::remove_if(std::begin(ordered_map), std::end(ordered_map), [](std::pair<integer, splitted_raw_line> const& p){return p.second.instruction == "";}), std::end(ordered_map));
+	ordered_map.erase(std::remove_if(std::begin(ordered_map), std::end(ordered_map), [](std::pair<address, splitted_raw_line> const& p){return p.second.instruction == "";}), std::end(ordered_map));
 	
 	// evaluating parameters
 	v_log(verbose, "->Resolving and evaluating parameters\n");
@@ -67,11 +68,11 @@ std::vector<std::pair<integer, integer>> assemble(std::vector<std::string> const
 //################### Assembly sub-functions ########################
 //###################################################################
 
-std::vector<splitted_raw_line> split_and_parse(std::vector<std::string> const& raw_lines, std::size_t& nb_errors)
+splitted_lines split_and_parse(std::vector<std::string> const& raw_lines, std::size_t& nb_errors)
 {
 	std::vector<splitted_raw_line> splitted_code;
 	splitted_code.reserve(raw_lines.size()); // to speed up push_back
-	integer i = 0;
+	std::size_t i = 0;
 
 	for (auto &e : raw_lines) // parse every line of code
 	{
@@ -88,7 +89,7 @@ std::vector<splitted_raw_line> split_and_parse(std::vector<std::string> const& r
 	return splitted_code;
 }
 
-void advanced_checks(std::vector<splitted_raw_line> const& splitted_asm, std::size_t& nb_errors)
+void advanced_checks(splitted_lines const& splitted_asm, std::size_t& nb_errors)
 {
 	for (auto &e : splitted_asm)
 	{
@@ -102,26 +103,35 @@ void advanced_checks(std::vector<splitted_raw_line> const& splitted_asm, std::si
 	}
 }
 
-std::vector<std::pair<integer, splitted_raw_line>> associate_lines_to_addresses(std::vector<splitted_raw_line> const& splitted_asm, integer& strt, std::size_t& nb_errors)
+ordered_lines_map_t associate_lines_to_addresses(std::vector<splitted_raw_line> const& splitted_asm, address& strt, std::size_t& nb_errors)
 {
-	std::vector<std::pair<integer, splitted_raw_line>> ordered_map; // associate each line to its future address
+	ordered_lines_map_t ordered_map; // associate each line to its future address
 
-	integer start_id = _impl::special_id; // magic value
-	integer current_id = 20; // default starting id will be twenty if not specified
+	address start_id; // start of the program
+	start_id.copy_properties(strt);
+	bool start_defined = false;
+
+	address current_id; // default starting id will be twenty if not specified
+	current_id.copy_properties(start_id);
+	current_id = 20;
 
 	for (auto &e : splitted_asm)
 	{
 		try {
+			try {
 			if (e.instruction == ".AT") // ordering instruction
 			{
-				current_id = static_cast<integer>(std::stoul(e.parameters));
+				current_id = static_cast<address::underlying_t>(std::stoul(e.parameters));
 			}
 			else if (e.instruction == ".START") // start instruction
 			{
-				if (start_id != _impl::special_id) // start already set ???
+				if (start_defined) {// start already set ???
 					throw asm_logic_error{ e.original_line_number, e.original_line, "error: two \".start\" found" };
+				} else { 
+					start_defined = true;
+				}
 
-				current_id = static_cast<integer>(std::stoul(e.parameters));
+				current_id = static_cast<address::underlying_t>(std::stoul(e.parameters));
 				start_id = current_id;
 			}
 			else if (e.instruction != "" || e.label != "")
@@ -130,9 +140,11 @@ std::vector<std::pair<integer, splitted_raw_line>> associate_lines_to_addresses(
 				if (e.instruction != "") // We don't want to increase id if the line contained only a label 
 					++current_id;
 			}
-
-			if (current_id >= 100) //overflow
-				throw asm_overflow{ e.original_line_number, e.original_line, std::string{ "error: overflow id=" } +std::to_string(current_id) };
+			}
+			catch (std::exception const& err)// overflow occured
+			{
+				throw asm_overflow{ e.original_line_number, e.original_line, std::string{ "error: overflow id=" } +std::to_string(current_id.value()) };
+			}
 		}
 		catch (base_asm_error const& err) {
 			++nb_errors;
@@ -142,7 +154,7 @@ std::vector<std::pair<integer, splitted_raw_line>> associate_lines_to_addresses(
 
 	// Checking if one .start has been defined
 	try {
-		if (start_id == _impl::special_id) // no start defined
+		if (!start_defined) // no start defined
 			throw asm_logic_error{ 0, "", "error: no .start found" };
 		strt = start_id;
 	}
@@ -154,10 +166,10 @@ std::vector<std::pair<integer, splitted_raw_line>> associate_lines_to_addresses(
 	return ordered_map;
 }
 
-std::unordered_map<std::string, integer> associate_labels(std::vector<std::pair<integer, splitted_raw_line>> const& splitted_asm, std::size_t& nb_errors)
+labels_map_t associate_labels(ordered_lines_map_t const& splitted_asm, std::size_t& nb_errors)
 {
-	std::unordered_map<std::string, integer> labels_map;
-	integer id;
+	labels_map_t labels_map;
+	address id{0};
 	splitted_raw_line line;
 
 	for (auto &pair : splitted_asm)
@@ -175,17 +187,17 @@ std::unordered_map<std::string, integer> associate_labels(std::vector<std::pair<
 			}
 		}
 		catch (base_asm_error const& err) {
-				++nb_errors;
-				std::cout << "! in line " << err.what() << std::endl;
-			}
+			++nb_errors;
+			std::cout << "! in line " << err.what() << std::endl;
+		}
 	}
 	return labels_map;
 }
 
 
-std::map<integer, half_resolved_line> resolve_parameters(std::vector<std::pair<integer, splitted_raw_line>> const& ordered_lines_map, std::unordered_map<std::string, integer> const& labels_map, std::size_t& nb_errors)
+half_assembled_lines resolve_parameters(ordered_lines_map_t const& ordered_lines_map, labels_map_t const& labels_map, std::size_t& nb_errors)
 {
-	std::map<integer, half_resolved_line> semi_assembled_map;
+	half_assembled_lines semi_assembled_map;
 
 	for (auto &e : ordered_lines_map)
 	{
@@ -200,14 +212,14 @@ std::map<integer, half_resolved_line> resolve_parameters(std::vector<std::pair<i
 	return semi_assembled_map;
 }
 
-std::vector<std::pair<integer,integer>> assemble_resolved_lines(std::map<integer, half_resolved_line> const& parameters_resolved_map)
+assembled_data assemble_resolved_lines(half_assembled_lines const& parameters_resolved_map)
 {
-	std::vector<std::pair<integer, integer>> ret{ parameters_resolved_map.size() };
+	assembled_data ret{ parameters_resolved_map.size() };
 
 	std::size_t j = 0;
 	for (auto &e : parameters_resolved_map)
 	{
-		ret[j] = { e.first, instruction_opcode(e.second.instruction) * 100 + e.second.parameter };
+		ret[j] = { e.first, instruction_opcode(e.second.instruction) * pow(10, e.first.digits()) + e.second.parameter };
 		++j;
 	}
 	return ret;
@@ -216,14 +228,15 @@ std::vector<std::pair<integer,integer>> assemble_resolved_lines(std::map<integer
 //###################################################################
 //################# Line specialized functions ######################
 //###################################################################
-half_resolved_line evaluate_line(splitted_raw_line const& l, std::unordered_map<std::string, integer> const& labels_map)
+half_resolved_line evaluate_line(splitted_raw_line const& l, labels_map_t const& labels_map)
 {
 	half_resolved_line ret;
+	ret.parameter.copy_properties(labels_map.begin()->second); // copy properties
 	ret.instruction = l.instruction;
 
 	if (is_strictly_numeric(l.parameters)) // parameters contains just a number
 	{
-		ret.parameter = static_cast<integer>(std::stoul(l.parameters));
+		ret.parameter = static_cast<address::underlying_t>(std::stoul(l.parameters));
 	}
 	else if (resolve_parameter(l.parameters, labels_map) != _impl::special_id) // parameters contains only a label which exists in BDD
 	{
@@ -242,43 +255,44 @@ half_resolved_line evaluate_line(splitted_raw_line const& l, std::unordered_map<
 	return ret;
 }
 
-integer compute_expression(expression const& exp, std::unordered_map<std::string, integer> const& labels_map, splitted_raw_line const& l)
+bint compute_expression(expression const& exp, labels_map_t const& labels_map, splitted_raw_line const& l)
 {
-	integer lhs = resolve_operand(exp.lhs, labels_map, l);
-	integer rhs = resolve_operand(exp.rhs, labels_map, l);
+	bint lhs = resolve_operand(exp.lhs, labels_map, l);
+	bint rhs = resolve_operand(exp.rhs, labels_map, l);
 
 	if (exp.operand == std::string{ "-" }) // sub
 	{
-		return static_cast<integer>(lhs - rhs);
+		return lhs - rhs;
 	}
 	else // add
 	{
-		return static_cast<integer>(lhs + rhs);
+		return lhs + rhs;
 	}
 }
 
 
-integer resolve_operand(std::string const& op, std::unordered_map<std::string, integer> const& labels_map, splitted_raw_line const& l)
+bint resolve_operand(std::string const& op, labels_map_t const& labels_map, splitted_raw_line const& l)
 {
-	integer ret;
+	bint ret;
+	ret.copy_properties(labels_map.begin()->second); // we copy the properties
 
 	if (is_strictly_numeric(op)) // lhs is just a number
 	{
-		ret = static_cast<integer>(std::stoul(op));
+		ret = static_cast<bint::underlying_t>(std::stoul(op));
 	}
 	else // lhs must be a label
 	{
 		ret = resolve_parameter(op, labels_map);
-		if (ret == _impl::special_id) // lhs isn't a number or a known label
+		if (ret == error_value) // lhs isn't a number or a known label
 			asm_logic_error{ l.original_line_number, l.parameters, std::string{ "error: Unknown label [" } + op + std::string{ "]" } };
 	}
 
 	return ret;
 }
 
-integer resolve_parameter(std::string const& p, std::unordered_map<std::string, integer> const& map)
+parameter resolve_parameter(std::string const& p, labels_map_t const& map)
 {
-	integer ret = _impl::special_id;
+	parameter ret = error_value;
 
 	if (map.find(p) != std::end(map)) // parameters contains only a label which exists in BDD
 	{
@@ -288,7 +302,7 @@ integer resolve_parameter(std::string const& p, std::unordered_map<std::string, 
 	return ret;
 }
 
-splitted_raw_line parse_line(integer id, std::string const& str)
+splitted_raw_line parse_line(std::size_t id, std::string const& str)
 {
 	splitted_raw_line ret{ id, str, "", "", "", "" };
 	if (str == std::string{""}) // empty

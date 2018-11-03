@@ -10,6 +10,8 @@ struct options
 	bool no_file;
 	bool verbose;
 	bool assemble; //do we need to assemble ?
+	bool check;
+	std::size_t address_digits;
 	std::vector<std::string> out;
 	std::vector<std::string> in;
 };

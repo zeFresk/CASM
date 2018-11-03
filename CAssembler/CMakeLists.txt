@@ -64,9 +64,9 @@ endif()
 #configuration header
 #detecting number of bits
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-	set(BITS "64 bits")
+	set(BITS 64)
 else()
-	set(BITS "32 bits")
+	set(BITS 32)
 endif()
 
 configure_file(

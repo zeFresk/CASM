@@ -10,7 +10,7 @@ namespace _impl {
 
 	std::regex parameters_regex{ parameters_str};
 
-	std::regex double_regex{ double_digits_only };
+	std::regex digits_regex{ digits_only };
 
 	//std::regex triple_regex{ triple_digits_only}; // not used
 

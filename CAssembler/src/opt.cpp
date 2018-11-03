@@ -23,7 +23,7 @@ void check_args(options const& opt)
 
 void version()
 {
-	std::cout << "CAssembler (x" << BITS << ") version " << MAJOR_VERSION << "." << MINOR_VERSION << "\n"
+	std::cout << "CAssembler (x" << BITS <<" bits) version " << MAJOR_VERSION << "." << MINOR_VERSION << "\n"
 		<< "Compiled with " << COMPILER_ID << " v" << COMPILER_VERSION << "\n"
 		/*<< "CXX_FLAGS=" << CXX_FLAGS */<< std::endl;
 }
@@ -51,6 +51,8 @@ options parse_args(int argc, char* argv[])
 		("verbose,v","print more information during assembly process")
 		("human-readable,h", "print output as text rather than binary")
 		("file,f", po::value<std::vector<std::string>>(&ret.out)->composing(), "output file(s), default is ${input_filename}.cbin")
+		("disable-check", "disable out of range checks during assembly.")
+		("address-size,d", po::value<std::size_t>(&ret.address_digits)->default_value(3), "number of digits allowed per address (base 10)")
 		("no-file", "print output binary instead of saving it")
 		;
 
@@ -110,6 +112,8 @@ options parse_args(int argc, char* argv[])
 	ret.no_file = vm.count("no-file");
 
 	ret.verbose = vm.count("verbose");
+
+	ret.check = !(vm.count("disable-check"));
 
 	ret.binary_file = !vm.count("human-readable");
 
