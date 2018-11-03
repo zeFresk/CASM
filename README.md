@@ -25,7 +25,7 @@ CAssembler functionnalities
 - [x] comments
 - [x] pointers
 - [ ] *@ operator* refering to address of variable
-- [ ] dynamic memory size support
+- [x] dynamic memory size support
 - [ ] warnings
 
 CEmu

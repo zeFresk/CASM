@@ -20,8 +20,11 @@
 //################## Assembly main functions#########################
 //###################################################################
 
-assembled_data ssemble(std::vector<std::string> const& raw_asm, address& strt, bool verbose)
+bint address_model;
+
+assembled_data assemble(std::vector<std::string> const& raw_asm, address& strt, bool verbose)
 {
+	address_model = strt;
 	//Parsing a first time to separate labels, instructions, parameters and comments
 	v_log(verbose, "->Parsing\n");
 
@@ -108,7 +111,7 @@ ordered_lines_map_t associate_lines_to_addresses(std::vector<splitted_raw_line> 
 	ordered_lines_map_t ordered_map; // associate each line to its future address
 
 	address start_id; // start of the program
-	start_id.copy_properties(strt);
+	start_id.copy_properties(address_model);
 	bool start_defined = false;
 
 	address current_id; // default starting id will be twenty if not specified
@@ -170,6 +173,7 @@ labels_map_t associate_labels(ordered_lines_map_t const& splitted_asm, std::size
 {
 	labels_map_t labels_map;
 	address id{0};
+	id.copy_properties(address_model);
 	splitted_raw_line line;
 
 	for (auto &pair : splitted_asm)
@@ -219,7 +223,7 @@ assembled_data assemble_resolved_lines(half_assembled_lines const& parameters_re
 	std::size_t j = 0;
 	for (auto &e : parameters_resolved_map)
 	{
-		ret[j] = { e.first, instruction_opcode(e.second.instruction) * pow(10, e.first.digits()) + e.second.parameter };
+		ret[j] = { e.first, bint{static_cast<bint::underlying_t>(instruction_opcode(e.second.instruction) * pow(10, e.first.digits()) + e.second.parameter.value()), e.first.digits() + 1 }};
 		++j;
 	}
 	return ret;
@@ -231,14 +235,14 @@ assembled_data assemble_resolved_lines(half_assembled_lines const& parameters_re
 half_resolved_line evaluate_line(splitted_raw_line const& l, labels_map_t const& labels_map)
 {
 	half_resolved_line ret;
-	ret.parameter.copy_properties(labels_map.begin()->second); // copy properties
+	ret.parameter.copy_properties(address_model); // copy properties
 	ret.instruction = l.instruction;
 
 	if (is_strictly_numeric(l.parameters)) // parameters contains just a number
 	{
 		ret.parameter = static_cast<address::underlying_t>(std::stoul(l.parameters));
 	}
-	else if (resolve_parameter(l.parameters, labels_map) != _impl::special_id) // parameters contains only a label which exists in BDD
+	else if (resolve_parameter(l.parameters, labels_map) != error_value) // parameters contains only a label which exists in BDD
 	{
 		ret.parameter = resolve_parameter(l.parameters, labels_map);
 	}
@@ -274,7 +278,7 @@ bint compute_expression(expression const& exp, labels_map_t const& labels_map, s
 bint resolve_operand(std::string const& op, labels_map_t const& labels_map, splitted_raw_line const& l)
 {
 	bint ret;
-	ret.copy_properties(labels_map.begin()->second); // we copy the properties
+	ret.copy_properties(address_model); // we copy the properties
 
 	if (is_strictly_numeric(op)) // lhs is just a number
 	{

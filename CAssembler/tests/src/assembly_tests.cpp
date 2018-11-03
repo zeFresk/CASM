@@ -35,7 +35,7 @@ std::vector<std::string> load_from_stream(std::istream& is)
 */
 #define ASSEMBLY_FMT_TEST_FILE(TEST_NAME) TEST_F(AssemblyTests, TEST_NAME) {\
 	auto asm_str = load_from_file(std::string{"asm/"} + #TEST_NAME + std::string{ ".casm" });\
-	integer start_id = 0;\
+	bint start_id{0, 2, true};\
 	auto out = assemble(asm_str, start_id);\
 	\
 	std::stringstream out_stream;\

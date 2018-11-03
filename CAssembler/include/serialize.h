@@ -7,6 +7,7 @@
 #define serilize_h
 
 #include "assembler.h"
+#include "bounded_integer.h"
 
 #include <iostream>
 
@@ -22,7 +23,7 @@
 */
 
 // Serialize an array of address|instruction to a text file.
-void serialize_as_txt(std::vector<std::pair<integer, integer>> const& in, integer start, std::ostream& out);
+void serialize_as_txt(assembled_data const& in, bint const& start, std::ostream& out);
 
 /*
 	Format of a cardiac binary :
@@ -30,6 +31,6 @@ void serialize_as_txt(std::vector<std::pair<integer, integer>> const& in, intege
 
 	Everything is encoded on sizeof(integer) and in little-endian
 */
-void serialize_as_binary(std::vector<std::pair<integer, integer>> const& in, integer start, std::ostream& out);
+void serialize_as_binary(assembled_data const& in, bint const& start, std::ostream& out);
 
 #endif

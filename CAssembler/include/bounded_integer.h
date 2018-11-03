@@ -113,6 +113,6 @@ bool operator<=(bounded_integer_b10 const& lhs, bounded_integer_b10 const& rhs);
 bool operator>=(bounded_integer_b10 const& lhs, bounded_integer_b10 const& rhs);
 
 // magic value
-const bint error_value{std::numeric_limits<internal_t>::min(), std::numeric_limits<internal_t>::digits10, false, std::numeric_limits<internal_t>::min()};
+extern const bint error_value;
 
 #endif

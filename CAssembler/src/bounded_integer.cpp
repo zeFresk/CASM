@@ -25,8 +25,7 @@ internal_t pow(internal_t a, std::size_t b)
 bounded_integer_b10::bounded_integer_b10(internal_t value, std::size_t nb_digits10, bool check_for_overflow, internal_t minimum_value) 
 	: value_{value}, nb_digits_{nb_digits10}, maximum_{static_cast<internal_t>(pow(10, nb_digits10))}, check_{check_for_overflow}, minimum_{minimum_value}
 {
-	assert(! OOB() && "Value entered is out of range");
-	assert(std::numeric_limits<internal_t>::digits10 < nb_digits10 && "bounded integer : can't store that much digits in an integer");
+	assert(std::numeric_limits<internal_t>::digits10 >= nb_digits10 && "bounded integer : can't store that much digits in an integer");
 
 	OOB_throw();
 }
@@ -34,7 +33,6 @@ bounded_integer_b10::bounded_integer_b10(internal_t value, std::size_t nb_digits
 // assignation
 bounded_integer_b10& bounded_integer_b10::operator=(internal_t rhs)
 {
-	assert(! OOB() && "Value assigned is out of range");
 	OOB_throw();
 
 	value_ = rhs;
@@ -58,7 +56,6 @@ bounded_integer_b10& bounded_integer_b10::operator++()
 {
 	++value_;
 
-	assert(! OOB() && "value overflow after incrementation");
 	OOB_throw();
 
 	return *this;
@@ -90,7 +87,6 @@ bounded_integer_b10 bounded_integer_b10::operator++(int)
 	bounded_integer_b10 tmp(*this); //copy
 	operator++();
 
-	assert(! OOB() && "value overflow after incrementation");
 	OOB_throw();
 
 	return tmp;
@@ -101,7 +97,6 @@ bounded_integer_b10& bounded_integer_b10::operator--()
 {
 	--value_;
 	
-	assert(! OOB() && "value overflow after decrementation");
 	OOB_throw();
 
 	return *this;
@@ -113,7 +108,6 @@ bounded_integer_b10 bounded_integer_b10::operator--(int)
 	bounded_integer_b10 tmp(*this);
 	operator--();
 
-	assert(! OOB() && "value overflow after decrementation");
 	OOB_throw();
 
 	return tmp;
@@ -126,7 +120,6 @@ bounded_integer_b10& bounded_integer_b10::operator+=(bounded_integer_b10 const& 
 {
 	value_ += rhs.value_;
 
-	assert(! OOB() && "value overflow after addition");
 	OOB_throw();
 
 	return *this;
@@ -137,7 +130,6 @@ bounded_integer_b10& bounded_integer_b10::operator-=(bounded_integer_b10 const& 
 {
 	value_ -= rhs.value_;
 
-	assert(! OOB() && "value underflow after substraction");
 	OOB_throw();
 
 	return *this;
@@ -148,7 +140,6 @@ bounded_integer_b10& bounded_integer_b10::operator*=(bounded_integer_b10 const& 
 {
 	value_ *= rhs.value_;
 
-	assert(! OOB() && "value overflow after multiplication");
 	OOB_throw();
 
 	return *this;
@@ -192,4 +183,5 @@ bool operator>(bounded_integer_b10 const& lhs, bounded_integer_b10 const& rhs) {
 bool operator<=(bounded_integer_b10 const& lhs, bounded_integer_b10 const& rhs) { return ! (lhs > rhs); }
 bool operator>=(bounded_integer_b10 const& lhs, bounded_integer_b10 const& rhs) { return ! (lhs < rhs); }
 
+const bint error_value{std::numeric_limits<internal_t>::min(), static_cast<internal_t>(std::numeric_limits<internal_t>::digits10), false, std::numeric_limits<internal_t>::min()};
 // serialization defined in serialize.cpp

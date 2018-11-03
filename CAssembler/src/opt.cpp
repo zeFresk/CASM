@@ -52,7 +52,7 @@ options parse_args(int argc, char* argv[])
 		("human-readable,h", "print output as text rather than binary")
 		("file,f", po::value<std::vector<std::string>>(&ret.out)->composing(), "output file(s), default is ${input_filename}.cbin")
 		("disable-check", "disable out of range checks during assembly.")
-		("address-size,d", po::value<std::size_t>(&ret.address_digits)->default_value(3), "number of digits allowed per address (base 10)")
+		("address-size,d", po::value<std::size_t>(&ret.address_digits)->default_value(2), "number of digits allowed per address (base 10)")
 		("no-file", "print output binary instead of saving it")
 		;
 

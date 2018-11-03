@@ -32,7 +32,6 @@ bool is_valid_instruction(std::string const& instruction_name);
 namespace _impl {
 
 	constexpr opcode special_op = std::numeric_limits<opcode>::max();
-	constexpr integer special_id = std::numeric_limits<integer>::max();
 
 	struct parameter_data {
 		opcode id;

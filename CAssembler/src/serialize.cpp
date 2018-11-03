@@ -10,26 +10,26 @@
 #include <boost/endian/conversion.hpp>
 
 
-void serialize_as_binary(std::ostream& out_buffer, bounded_integer_b10 const& bint)
+void serialize_as_binary(std::ostream& out_buffer, bint const& v)
 {
-	if (bint.maximum_ < std::numeric_limits<std::uint8_t>::max()) // value can be serialized as 8 bits  value
+	if (v.maximum_ < std::numeric_limits<std::uint8_t>::max()) // value can be serialized as 8 bits  value
 	{
-		uint8_t endian_corrected = boost::endian::native_to_little(static_cast<uint8_t>(bint.value_));
+		uint8_t endian_corrected = boost::endian::native_to_little(static_cast<uint8_t>(v.value_));
 		out_buffer.write(reinterpret_cast<const char*>(&endian_corrected), sizeof(uint8_t));
 	}
-	else if (bint.maximum_ < std::numeric_limits<std::uint16_t>::max()) // value can be serialized as 16 bits  value
+	else if (v.maximum_ < std::numeric_limits<std::uint16_t>::max()) // value can be serialized as 16 bits  value
 	{
-		uint16_t endian_corrected = boost::endian::native_to_little(static_cast<uint16_t>(bint.value_));
+		uint16_t endian_corrected = boost::endian::native_to_little(static_cast<uint16_t>(v.value_));
 		out_buffer.write(reinterpret_cast<const char*>(&endian_corrected), sizeof(uint16_t));
 	}
-	else if (bint.maximum_ < std::numeric_limits<std::uint32_t>::max()) // value can be serialized as 32 bits  value
+	else if (v.maximum_ < std::numeric_limits<std::uint32_t>::max()) // value can be serialized as 32 bits  value
 	{
-		uint32_t endian_corrected = boost::endian::native_to_little(static_cast<uint32_t>(bint.value_));
+		uint32_t endian_corrected = boost::endian::native_to_little(static_cast<uint32_t>(v.value_));
 		out_buffer.write(reinterpret_cast<const char*>(&endian_corrected), sizeof(uint32_t));
 	}
-	else if (bint.maximum_ < std::numeric_limits<std::uint64_t>::max()) // value can be serialized as 64 bits  value
+	else if (v.maximum_ < std::numeric_limits<std::uint64_t>::max()) // value can be serialized as 64 bits  value
 	{
-		uint64_t endian_corrected = boost::endian::native_to_little(static_cast<uint64_t>(bint.value_));
+		uint64_t endian_corrected = boost::endian::native_to_little(static_cast<uint64_t>(v.value_));
 		out_buffer.write(reinterpret_cast<const char*>(&endian_corrected), sizeof(uint64_t));
 	}
 	else // WTF ? > 64 bits ???
@@ -39,9 +39,9 @@ void serialize_as_binary(std::ostream& out_buffer, bounded_integer_b10 const& bi
 }
 
 
-void serialize_as_txt(std::ostream& out_buffer, bounded_integer_b10 const& bint)
+void serialize_as_txt(std::ostream& out_buffer, bint const& v)
 {
-	out_buffer << std::setfill('0') << std::setw(bint.nb_digits_) << bint.value_;
+	out_buffer << std::setfill('0') << std::setw(v.nb_digits_) << v.value_;
 }
 
 void serialize_as_txt(assembled_data const& in, bint const& start, std::ostream& out)
